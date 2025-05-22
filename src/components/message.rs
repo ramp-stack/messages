@@ -18,31 +18,29 @@ pub enum MessageType {
 
 /// A UI component representing a chat message, including avatar and content.
 #[derive(Debug, Component)]
-pub struct Message(Row, Option<Avatar>, MessageContent);
+pub struct TextMessage(Row, Option<Avatar>, MessageContent);
 
-impl OnEvent for Message {}
+impl OnEvent for TextMessage {}
 
-impl Message {
-    /// Constructs a new [`Message`] component with appropriate layout based on style.
+impl TextMessage {
+    /// Constructs a new [`TextMessage`] component with appropriate layout based on style.
     pub fn new(
         ctx: &mut Context,
         style: MessageType,
         message: &str,
-        sender: (&str, AvatarContent), // name, biography, identifier, avatar
+        sender: (String, AvatarContent), // name, biography, identifier, avatar
         time: Timestamp,
     ) -> Self {
-        let name = sender.0;
-
         let (offset, avatar) = match style {
             MessageType::You => (Offset::End, false),
             MessageType::Rooms => (Offset::Start, true),
             _ => (Offset::End, true),
         };
 
-        Message (
+        TextMessage (
             Row::new(8.0, offset, Size::Fit, Padding::default()),
             avatar.then(|| Avatar::new(ctx, sender.1, None, false, 24.0, None)),
-            MessageContent::new(ctx, style, message, name, time)
+            MessageContent::new(ctx, style, message, &sender.0, time)
         )
     }
 }

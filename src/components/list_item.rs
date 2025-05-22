@@ -8,7 +8,7 @@ pub trait ListItemMessages {
     fn contact(ctx: &mut Context, data: AvatarContent, name: &str, nym: &str, on_click: impl FnMut(&mut Context) + 'static) -> Self;
     fn recipient(ctx: &mut Context, data: AvatarContent, profile: Profile) -> Self;
     fn direct_message(ctx: &mut Context, data: AvatarContent, name: &str, recent: &str, on_click: impl FnMut(&mut Context) + 'static) -> Self;
-    fn group_message(ctx: &mut Context, names: Vec<&str>, on_click: impl FnMut(&mut Context) + 'static) -> Self;
+    fn group_message(ctx: &mut Context, names: Vec<String>, on_click: impl FnMut(&mut Context) + 'static) -> Self;
     fn room(ctx: &mut Context, data: AvatarContent, name: &str, members: &str, description: &str, on_click: impl FnMut(&mut Context) + 'static) -> Self;
 }
 
@@ -36,7 +36,7 @@ impl ListItemMessages for ListItem {
 
     /// Creates a list item for a group message.
     /// Displays the names of the group members as the description.
-    fn group_message(ctx: &mut Context, names: Vec<&str>, on_click: impl FnMut(&mut Context) + 'static) -> Self {
+    fn group_message(ctx: &mut Context, names: Vec<String>, on_click: impl FnMut(&mut Context) + 'static) -> Self {
         let description = names.join(", ");
         let avatar = AvatarContent::Icon("group", AvatarIconStyle::Secondary);
         ListItem::new(ctx, true, "Group Message", None, None, Some(&description), None, None, None, Some(avatar), None, on_click)
