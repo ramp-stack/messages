@@ -1,0 +1,10 @@
+[package]
+name = "pelican_ui_messages"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pelican_ui = {path = "../pelican_ui" }
+pelican_ui_profiles = {path = "../pelican_ui_profiles" }
+rust_on_rails = {path="../rust_on_rails"}
+serde = "1.0.219"
