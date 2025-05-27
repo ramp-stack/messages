@@ -1,7 +1,6 @@
 use rust_on_rails::prelude::*;
 use pelican_ui::prelude::*;
 use pelican_ui::prelude::Text as Text;
-use pelican_ui_profiles::Profile;
 
 /// Represents the style or source of a message in the UI.
 #[derive(Clone, Copy, Debug, PartialEq)]
