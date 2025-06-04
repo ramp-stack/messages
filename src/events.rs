@@ -1,5 +1,6 @@
-use rust_on_rails::prelude::*;
 use pelican_ui_profiles::Profile;
+use pelican_ui::events::Event;
+use pelican_ui::Context;
 
 /// Event to add a contact to a `QuickDeselect` component.
 #[derive(Debug, Clone)]

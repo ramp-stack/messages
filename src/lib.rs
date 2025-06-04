@@ -1,5 +1,5 @@
-use pelican_ui::prelude::*;
 use pelican_ui_profiles::Profile;
+use pelican_ui_std::Timestamp;
 
 use serde::{Serialize, Deserialize};
 

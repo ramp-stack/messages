@@ -1,28 +1,37 @@
-use rust_on_rails::prelude::*;
-use pelican_ui::prelude::*;
-use pelican_ui::prelude::Text as Text;
+use pelican_ui::events::OnEvent;
+use pelican_ui::drawable::{Drawable, Component, Align};
+use pelican_ui::layout::{Area, SizeRequest, Layout};
+use pelican_ui::{Context, Component};
 
-/// Represents the style or source of a message in the UI.
+use pelican_ui_std::{
+    Padding,
+    Size,
+    Offset,
+    Stack,
+    Text,
+    RoundedRectangle,
+    TextStyle,
+    Column,
+    Timestamp,
+    Row,
+    Avatar,
+    AvatarContent,
+};
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MessageType {
-    /// A message sent by the current user (you).
     You,
-    /// A message received from a direct contact.
     Contact,
-    /// A message in a group chat.
     Group,
-    /// A message in a public room.
     Rooms,
 }
 
-/// A UI component representing a chat message, including avatar and content.
 #[derive(Debug, Component)]
 pub struct TextMessage(Row, Option<Avatar>, MessageContent);
 
 impl OnEvent for TextMessage {}
 
 impl TextMessage {
-    /// Constructs a new [`TextMessage`] component with appropriate layout based on style.
     pub fn new(
         ctx: &mut Context,
         style: MessageType,
@@ -90,7 +99,7 @@ impl MessageData {
         name: &str,
         time: Timestamp,
     ) -> Self {
-        let text_size = ctx.get::<PelicanUI>().theme.fonts.size;
+        let text_size = ctx.theme.fonts.size;
         let (title_style, title_size, divider) = match style {
             MessageType::Rooms => (TextStyle::Heading, text_size.h5, false),
             _ => (TextStyle::Secondary, text_size.sm, true),
@@ -131,7 +140,7 @@ impl MessageBubble {
         message: &str,
         style: MessageType,
     ) -> Self {
-        let theme = &ctx.get::<PelicanUI>().theme;
+        let theme = &ctx.theme;
         let (colors, text_size) = (theme.colors, theme.fonts.size.md);
         let (bg_color, text_style) = match style {
             MessageType::You => (colors.brand.primary, TextStyle::White),
