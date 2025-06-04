@@ -1,10 +1,10 @@
-use pelican_ui_profiles::Profile;
+use profiles::Profile;
 use pelican_ui_std::Timestamp;
 
 use serde::{Serialize, Deserialize};
 
-mod components;
-mod events;
+pub mod components;
+pub mod events;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Room {
@@ -24,10 +24,3 @@ pub struct Message {
     pub timestamp: Timestamp,
     pub author: Profile,
 }
-
-pub mod prelude {
-    pub use crate::{Room, Message};
-    pub use crate::components::*;
-    pub use crate::events::*;
-}
-

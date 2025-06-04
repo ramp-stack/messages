@@ -3,7 +3,7 @@ use pelican_ui::drawable::{Drawable, Component};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
 
-use pelican_ui_profiles::Profile;
+use profiles::Profile;
 
 use pelican_ui_std::{
     Stack,
