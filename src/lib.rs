@@ -16,6 +16,10 @@ impl Room {
     pub fn new(profiles: Vec<Profile>, messages: Vec<Message>) -> Self {
         Room { profiles, messages }
     }
+
+    pub fn from(profiles: Vec<Profile>) -> Self {
+        Room { profiles, messages: vec![] }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
