@@ -8,3 +8,5 @@ pelican_ui = {path = "../pelican_ui" }
 pelican_ui_std = {path = "../pelican_ui_std" }
 profiles = {path = "../profiles" }
 serde = "1.0.219"
+uuid = { version = "1.17.0", features = ["v4", "serde"] }
+chrono = { version = "0.4.40", features = ["serde"] }

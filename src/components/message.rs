@@ -167,3 +167,15 @@ impl MessageBubble {
         MessageBubble(layout, background, content)
     }
 }
+
+#[derive(Debug, Component)]
+pub struct TextMessageGroup(Column, Vec<TextMessage>);
+impl OnEvent for TextMessageGroup {}
+
+impl TextMessageGroup {
+    pub fn new(messages: Vec<TextMessage>) -> Self {
+        TextMessageGroup(Column::center(24.0), messages)
+    }
+
+    pub fn messages(&mut self) -> &mut Vec<TextMessage> { &mut self.1 }
+}
