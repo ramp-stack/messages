@@ -73,7 +73,7 @@ dependencies = [
  "hex",
  "rusqlite",
  "rusqlite_kv",
- "secp256k1",
+ "secp256k1 0.29.1",
  "serde",
  "serde_json",
  "serde_with",
@@ -346,7 +346,7 @@ dependencies = [
  "bitcoin_hashes 0.14.0",
  "hex-conservative 0.2.1",
  "hex_lit",
- "secp256k1",
+ "secp256k1 0.29.1",
 ]
 
 [[package]]
@@ -712,27 +712,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cosmic-text"
-version = "0.14.2"
-dependencies = [
- "bitflags 2.9.1",
- "fontdb",
- "log",
- "rangemap",
- "rustc-hash 1.1.0",
- "rustybuzz",
- "self_cell",
- "smol_str",
- "swash",
- "sys-locale",
- "ttf-parser 0.21.1",
- "unicode-bidi",
- "unicode-linebreak",
- "unicode-script",
- "unicode-segmentation",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -953,7 +932,7 @@ dependencies = [
  "bitcoin",
  "bitcoin_hashes 0.16.0",
  "chacha20-poly1305",
- "secp256k1",
+ "secp256k1 0.29.1",
  "serde",
 ]
 
@@ -1298,17 +1277,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c4ee00b289aba7a9e5306d57c2d05499b2e5dc427f84ac708bd2c090212cf3e"
 dependencies = [
  "gl_generator",
-]
-
-[[package]]
-name = "glyphon"
-version = "0.9.0"
-dependencies = [
- "cosmic-text",
- "etagere",
- "lru",
- "rustc-hash 2.1.1",
- "wgpu",
 ]
 
 [[package]]
@@ -2001,6 +1969,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "maverick_os"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7870cb0ced9feac3c8e37e6b1262f2291b5a5328f587e5f0aeda43da830fcc8b"
+dependencies = [
+ "air",
+ "async-trait",
+ "cli-clipboard",
+ "dispatch2",
+ "downcast-rs 2.0.1",
+ "env_logger",
+ "hex",
+ "image 0.25.6",
+ "jni",
+ "log",
+ "ndk-context",
+ "objc2 0.6.1",
+ "objc2-av-foundation",
+ "objc2-core-media",
+ "objc2-core-video",
+ "objc2-foundation 0.3.1",
+ "rand 0.9.1",
+ "raw-window-handle",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tokio",
+ "winit",
+]
+
+[[package]]
 name = "maybe-rayon"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2038,9 +2037,12 @@ dependencies = [
 name = "messages"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "maverick_os 0.1.1",
  "pelican_ui",
  "pelican_ui_std",
  "profiles",
+ "secp256k1 0.31.0",
  "serde",
  "uuid",
 ]
@@ -2799,6 +2801,8 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "pelican_macro"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0adada1c230e529a3c534e951fdc904869ad9a3c3e6b02e1e01f5fcdedbf4ac8"
 dependencies = [
  "proc-macro2 1.0.95",
  "quote 1.0.40",
@@ -2812,7 +2816,7 @@ dependencies = [
  "downcast-rs 2.0.1",
  "image 0.25.6",
  "include_dir",
- "maverick_os",
+ "maverick_os 0.1.0",
  "nsvg",
  "pelican_ui_proc",
  "wgpu",
@@ -2832,7 +2836,7 @@ dependencies = [
 
 [[package]]
 name = "pelican_ui_std"
-version = "1.0.6"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "downcast-rs 2.0.1",
@@ -3011,8 +3015,10 @@ dependencies = [
 name = "profiles"
 version = "0.1.0"
 dependencies = [
+ "base64",
+ "image 0.25.6",
  "log",
- "maverick_os",
+ "maverick_os 0.1.0",
  "pelican_ui",
  "pelican_ui_std",
  "serde",
@@ -3123,6 +3129,40 @@ name = "r-efi"
 version = "5.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
+
+[[package]]
+name = "ramp-glyphon"
+version = "0.9.1"
+dependencies = [
+ "etagere",
+ "lru",
+ "ramp-text",
+ "rustc-hash 2.1.1",
+ "wgpu",
+]
+
+[[package]]
+name = "ramp-text"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b88f90d385e7686dce678196c7c5152be6942aae63d32a60b18b9bdfd5892b8"
+dependencies = [
+ "bitflags 2.9.1",
+ "fontdb",
+ "log",
+ "rangemap",
+ "rustc-hash 1.1.0",
+ "rustybuzz",
+ "self_cell",
+ "smol_str",
+ "swash",
+ "sys-locale",
+ "ttf-parser 0.21.1",
+ "unicode-bidi",
+ "unicode-linebreak",
+ "unicode-script",
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "rand"
@@ -3494,8 +3534,19 @@ checksum = "9465315bc9d4566e1724f0fffcbcc446268cb522e60f9a27bcded6b19c108113"
 dependencies = [
  "bitcoin_hashes 0.14.0",
  "rand 0.8.5",
- "secp256k1-sys",
+ "secp256k1-sys 0.10.1",
  "serde",
+]
+
+[[package]]
+name = "secp256k1"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a3dff2d01c9aa65c3186a45ff846bfea52cbe6de3b6320ed2a358d90dad0d76"
+dependencies = [
+ "bitcoin_hashes 0.14.0",
+ "rand 0.9.1",
+ "secp256k1-sys 0.11.0",
 ]
 
 [[package]]
@@ -3503,6 +3554,15 @@ name = "secp256k1-sys"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4387882333d3aa8cb20530a17c69a3752e97837832f34f6dccc760e715001d9"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcb913707158fadaf0d8702c2db0e857de66eb003ccfdda5924b5f5ac98efb38"
 dependencies = [
  "cc",
 ]
@@ -4188,6 +4248,7 @@ checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
  "getrandom 0.3.3",
  "js-sys",
+ "serde",
  "wasm-bindgen",
 ]
 
@@ -4663,9 +4724,9 @@ version = "4.0.1"
 dependencies = [
  "bytemuck",
  "fast_image_resize",
- "glyphon",
  "hex",
  "image 0.25.6",
+ "ramp-glyphon",
  "unicode-segmentation",
  "wgpu",
  "wgpu_dyn_buffer",

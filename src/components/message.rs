@@ -3,6 +3,12 @@ use pelican_ui::drawable::{Drawable, Component, Align};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
 
+use profiles::components::AvatarContentProfiles;
+use profiles::service::Profiles;
+
+use crate::Message;
+use crate::components::AvatarMessages;
+
 use pelican_ui_std::{
     Padding,
     Size,
@@ -35,10 +41,14 @@ impl TextMessage {
     pub fn new(
         ctx: &mut Context,
         style: MessageType,
-        message: &str,
-        sender: (String, AvatarContent), // name, biography, identifier, avatar
-        time: Timestamp,
+        msg: Message
     ) -> Self {
+        let orange_name = msg.author;
+        let profiles = ctx.state().get::<Profiles>();
+        let profile = profiles.0.get(&orange_name).unwrap();
+        let username = profile.get("username").unwrap();
+        let avatar_content = AvatarContentProfiles::from_orange_name(ctx, &orange_name);
+
         let (offset, avatar) = match style {
             MessageType::You => (Offset::End, false),
             MessageType::Rooms => (Offset::Start, true),
@@ -47,8 +57,8 @@ impl TextMessage {
 
         TextMessage (
             Row::new(8.0, offset, Size::Fit, Padding::default()),
-            avatar.then(|| Avatar::new(ctx, sender.1, None, false, 24.0, None)),
-            MessageContent::new(ctx, style, message, &sender.0, time)
+            avatar.then(|| AvatarMessages::new(ctx, avatar_content)),
+            MessageContent::new(ctx, style, &msg.message, username, msg.timestamp)
         )
     }
 }

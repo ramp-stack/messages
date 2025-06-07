@@ -1,10 +1,13 @@
-use profiles::Profile;
+use profiles::service::Profile;
 use pelican_ui::events::Event;
 use pelican_ui::Context;
 
+use maverick_os::air::air;
+use air::orange_name::OrangeName;
+
 /// Event to add a contact to a `QuickDeselect` component.
 #[derive(Debug, Clone)]
-pub struct AddContactEvent(pub Profile);
+pub struct AddContactEvent(pub OrangeName);
 
 impl Event for AddContactEvent {
     fn pass(self: Box<Self>, _ctx: &mut Context, children: Vec<((f32, f32), (f32, f32))>) -> Vec<Option<Box<dyn Event>>> {
@@ -14,7 +17,7 @@ impl Event for AddContactEvent {
 
 /// Event to remove a contact from a `QuickDeselect` component.
 #[derive(Debug, Clone)]
-pub struct RemoveContactEvent(pub Profile);
+pub struct RemoveContactEvent(pub OrangeName);
 
 impl Event for RemoveContactEvent {
     fn pass(self: Box<Self>, _ctx: &mut Context, children: Vec<((f32, f32), (f32, f32))>) -> Vec<Option<Box<dyn Event>>> {
