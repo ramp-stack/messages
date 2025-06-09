@@ -4,7 +4,10 @@ use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
 
 use profiles::components::AvatarContentProfiles;
-use profiles::service::Profiles;
+use profiles::service::{Profiles, Name};
+use profiles::OrangeName;
+
+use chrono::Duration;
 
 use crate::Message;
 use crate::components::AvatarMessages;
@@ -40,14 +43,16 @@ impl OnEvent for TextMessage {}
 impl TextMessage {
     pub fn new(
         ctx: &mut Context,
-        style: MessageType,
-        msg: Message
+        mut style: MessageType,
+        messages: Vec<String>,
+        author: OrangeName,
+        timestamp: Timestamp
     ) -> Self {
-        let orange_name = msg.author;
+        if author == ctx.state().get::<Name>().0.unwrap() { style = MessageType::You; }
         let profiles = ctx.state().get::<Profiles>();
-        let profile = profiles.0.get(&orange_name).unwrap();
+        let profile = profiles.0.get(&author).unwrap();
         let username = profile.get("username").unwrap();
-        let avatar_content = AvatarContentProfiles::from_orange_name(ctx, &orange_name);
+        let avatar_content = AvatarContentProfiles::from_orange_name(ctx, &author);
 
         let (offset, avatar) = match style {
             MessageType::You => (Offset::End, false),
@@ -58,9 +63,11 @@ impl TextMessage {
         TextMessage (
             Row::new(8.0, offset, Size::Fit, Padding::default()),
             avatar.then(|| AvatarMessages::new(ctx, avatar_content)),
-            MessageContent::new(ctx, style, &msg.message, username, msg.timestamp)
+            MessageContent::new(ctx, style, messages, &username, timestamp)
         )
     }
+
+    fn content(&mut self) -> &mut MessageContent {&mut self.2}
 }
 
 #[derive(Debug, Component)]
@@ -71,7 +78,7 @@ impl MessageContent {
     fn new(
         ctx: &mut Context,
         style: MessageType,
-        message: &str,
+        messages: Vec<String>,
         name: &str,
         time: Timestamp,
     ) -> Self {
@@ -93,9 +100,11 @@ impl MessageContent {
 
         MessageContent(
             Column::new(8.0, offset, Size::custom(|widths: Vec<(f32, f32)>| (widths[1].0, f32::MAX)), Padding::default()),
-            top, MessageBubbles::new(ctx, message, style), bottom
+            top, MessageBubbles::new(ctx, messages, style), bottom
         )
     }
+
+    fn bubbles(&mut self) -> &mut MessageBubbles {&mut self.2}
 }
 
 #[derive(Debug, Component)]
@@ -131,13 +140,16 @@ impl OnEvent for MessageBubbles {}
 impl MessageBubbles {
     fn new(
         ctx: &mut Context,
-        // messages: Vec<&str>,
-        message: &str,
+        messages: Vec<String>,
+        // message: &str,
         style: MessageType,
     ) -> Self {
-        // let messages = messages.iter().map(|m| MessageBubble::new(ctx, m, style)).collect();
-        MessageBubbles(Column::new(8.0, Offset::Start, Size::Fit, Padding::default()), vec![MessageBubble::new(ctx, message, style)])
+        let messages = messages.iter().map(|m| MessageBubble::new(ctx, m.as_str(), style)).collect();
+        let offset = if style == MessageType::You { Offset::End } else { Offset::Start };
+        MessageBubbles(Column::new(8.0, offset, Size::Fit, Padding::default()), messages)
     }
+
+    fn bubbles(&mut self) -> &mut Vec<MessageBubble> {&mut self.1}
 }
 
 #[derive(Debug, Component)]
@@ -183,9 +195,40 @@ pub struct TextMessageGroup(Column, Vec<TextMessage>);
 impl OnEvent for TextMessageGroup {}
 
 impl TextMessageGroup {
-    pub fn new(messages: Vec<TextMessage>) -> Self {
-        TextMessageGroup(Column::center(24.0), messages)
+    pub fn new(ctx: &mut Context, messages: &Vec<Message>, style: MessageType) -> Self {
+        let mut result = Vec::new();
+        let mut section = Vec::new();
+        let mut last_author = None;
+        let mut last_time = None;
+
+        for msg in messages {
+            let time = msg.timestamp.to_datetime();
+            let author = msg.author.clone();
+
+            let same_author = Some(author.clone()) == last_author;
+            let close_time = last_time.map(|t| (time - t) <= Duration::minutes(1)).unwrap_or(false);
+
+            if same_author && close_time {
+                section.push(msg.message.clone());
+                last_time = Some(time);
+            } else {
+                if let (Some(author), Some(time)) = (last_author, last_time) {
+                    result.push(TextMessage::new(ctx, style, section, author, Timestamp::new(time)));
+                }
+                section = vec![msg.message.clone()];
+                last_author = Some(author);
+                last_time = Some(time);
+            }
+        }
+
+        if let (Some(author), Some(time)) = (last_author, last_time) {
+            result.push(TextMessage::new(ctx, style, section, author, Timestamp::new(time)));
+        }
+
+        TextMessageGroup(Column::center(24.0), result)
     }
 
-    pub fn messages(&mut self) -> &mut Vec<TextMessage> { &mut self.1 }
+    pub fn count(&mut self) -> usize {
+        self.1.iter_mut().map(|msg| msg.content().bubbles().bubbles().len()).sum()
+    }
 }

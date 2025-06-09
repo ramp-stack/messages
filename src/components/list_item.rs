@@ -57,7 +57,7 @@ impl ListItemMessages {
         let profile = profiles.0.get(&orange_name).unwrap();
         let name = profile.get("username").unwrap();
         let data = AvatarContentProfiles::from_orange_name(ctx, &orange_name);
-        let recent = &room.messages.last().unwrap().message;
+        let recent = &room.messages.last().map(|m| m.message.clone()).unwrap_or("No messages yet.".to_string());
         ListItem::new(ctx, true, name, None, Some(&recent), None, None, None, None, Some(data), None, on_click)
     }
 

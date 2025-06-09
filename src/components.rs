@@ -4,3 +4,7 @@ pub mod message;
 pub use message::*;
 pub mod avatar;
 pub use avatar::*;
+pub mod text_input;
+pub use text_input::*;
+pub mod interface;
+pub use interface::*;
