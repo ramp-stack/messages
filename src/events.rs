@@ -27,7 +27,7 @@ impl Event for RemoveContactEvent {
 
 /// Event to remove a contact from a `QuickDeselect` component.
 #[derive(Debug, Clone)]
-pub struct CreateMessageEvent(pub uuid::Uuid);
+pub struct CreateMessageEvent;
 
 impl Event for CreateMessageEvent {
     fn pass(self: Box<Self>, _ctx: &mut Context, children: Vec<((f32, f32), (f32, f32))>) -> Vec<Option<Box<dyn Event>>> {
