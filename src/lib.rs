@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 pub mod components;
 pub mod events;
+pub mod pages;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Room {
