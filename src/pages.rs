@@ -6,10 +6,11 @@ use profiles::service::{Profile, Profiles, Name};
 use profiles::components::AvatarContentProfiles;
 use profiles::pages::{Account, UserAccount};
 use profiles::plugin::ProfileHelper;
+use profiles::OrangeName;
 
 use crate::{Room, Rooms, Message};
 use crate::components::{QuickDeselect, TextMessage, MessageType, ListItemMessages, TextMessageGroup, TextInputMessages, HeaderMessages};
-use crate::events::CreateMessageEvent;
+use crate::events::{CreateMessageEvent, OpenAccountEvent, SetRoomIdEvent};
 
 use pelican_ui_std::{
     AppPage, Stack, Page,
@@ -29,40 +30,44 @@ use pelican_ui_std::{
 
 use::chrono::{DateTime, Local, Utc};
 use std::sync::{Arc, Mutex};
+use std::collections::HashSet;
 
 // use crate::MSGPlugin;
 // use crate::msg::{CurrentRoom, CurrentProfile};
 
-#[derive(Debug, Component, AppPage)]
-pub struct MessagesHome(Stack, Page);
-impl OnEvent for MessagesHome {}
+#[derive(Debug, Component)]
+pub struct MessagesHome(Stack, Page, #[skip] Option<uuid::Uuid>);
+
+impl AppPage for MessagesHome {
+    fn has_nav(&self) -> bool { true }
+    fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
+        match index {
+            0 => Ok(Box::new(SelectRecipients::new(ctx))),
+            1 => Ok(Box::new(GroupMessage::new(ctx, self.2.unwrap()))),
+            2 => Ok(Box::new(DirectMessage::new(ctx, self.2.unwrap(), self))),
+            _ => Err(self),
+        }
+    }
+}
 
 impl MessagesHome {
-    pub fn new(ctx: &mut Context) -> (Self, bool) {
+    pub fn new(ctx: &mut Context) -> Self {
         let header = Header::home(ctx, "Messages");
-        let new_message = Button::primary(ctx, "New Message", |ctx: &mut Context| {
-            let page = SelectRecipients::new(ctx);
-            ctx.trigger_event(NavigateEvent::new(page))
-        });
+        let new_message = Button::primary(ctx, "New Message", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let bumper = Bumper::single_button(ctx, new_message);
         let rooms = ctx.state().get::<Rooms>().0;
         // println!("rooms {:?}", rooms);
         let messages = rooms.into_iter().map(|(id, room)| {
             match room.authors.len() > 1 {
-                true => {
-                    ListItemMessages::group_message(ctx, &id, move |ctx: &mut Context| {
-                        let page = GroupMessage::new(ctx, &id);
-                        ctx.trigger_event(NavigateEvent::new(page));
-                    })
-                },
-                false => {
-                    ListItemMessages::direct_message(ctx, &id, move |ctx: &mut Context| {
-                        let (on_return, with_nav) = Self::new(ctx);
-                        let page = DirectMessage::new(ctx, &id, (on_return.into_boxed(), with_nav));
-                        ctx.trigger_event(NavigateEvent::new(page));
-                    })
-                }
+                true => ListItemMessages::group_message(ctx, &id, move |ctx: &mut Context| {
+                    ctx.trigger_event(SetRoomIdEvent(id));
+                    ctx.trigger_event(NavigateEvent(1));
+                }),
+                false => ListItemMessages::direct_message(ctx, &id, move |ctx: &mut Context| {
+                    ctx.trigger_event(SetRoomIdEvent(id));
+                    ctx.trigger_event(NavigateEvent(2));
+                })
             }
         }).collect::<Vec<ListItem>>();
         let text_size = ctx.theme.fonts.size.md;
@@ -73,15 +78,39 @@ impl MessagesHome {
             false => Content::new(Offset::Center, vec![Box::new(instructions)])
         };
 
-        (MessagesHome(Stack::center(), Page::new(header, content, Some(bumper))), true)
+        MessagesHome(Stack::center(), Page::new(header, content, Some(bumper)), None)
     }
 }
 
-#[derive(Debug, Component, AppPage)]
-pub struct SelectRecipients(Stack, Page, #[skip] ButtonState);
+impl OnEvent for MessagesHome {
+    fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
+        if let Some(SetRoomIdEvent(id)) = event.downcast_ref::<SetRoomIdEvent>() {
+            self.2 = Some(*id);
+        }
+        true
+    }
+}
+
+#[derive(Debug, Component)]
+pub struct SelectRecipients(Stack, Page, #[skip] ButtonState, #[skip] Option<uuid::Uuid>);
+
+impl AppPage for SelectRecipients {
+    fn has_nav(&self) -> bool { true }
+    fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
+        match index {
+            0 => Ok(Box::new(MessagesHome::new(ctx))),
+            1 => Ok(Box::new(GroupMessage::new(ctx, self.3.unwrap()))),
+            2 => {
+                let home = MessagesHome::new(ctx);
+                Ok(Box::new(DirectMessage::new(ctx, self.3.unwrap(), Box::new(home))))
+            },
+            _ => Err(self),
+        }
+    }
+}
 
 impl SelectRecipients {
-    pub fn new(ctx: &mut Context) -> (Self, bool) {
+    pub fn new(ctx: &mut Context) -> Self {
         let icon_button = None::<(&'static str, fn(&mut Context, &mut String))>;
         let searchbar = TextInput::new(ctx, None, None, "Profile name...", None, icon_button);
 
@@ -99,16 +128,13 @@ impl SelectRecipients {
         });
 
         let content = Content::new(Offset::Start, vec![Box::new(searchbar), content]);
-        let back = IconButton::navigation(ctx, "left", |ctx: &mut Context| {
-            let page = MessagesHome::new(ctx);
-            ctx.trigger_event(NavigateEvent::new(page))
-        });
+        let back = IconButton::navigation(ctx, "left", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let header = Header::stack(ctx, Some(back), "Send to contact", None);
         let button = Button::disabled(ctx, "Continue", move |ctx: &mut Context| ctx.trigger_event(CreateMessageEvent));
 
         let bumper = Bumper::single_button(ctx, button);
-        (SelectRecipients(Stack::center(), Page::new(header, content, Some(bumper)), ButtonState::Default), false)
+        SelectRecipients(Stack::center(), Page::new(header, content, Some(bumper)), ButtonState::Default, None)
     }
 }
 
@@ -119,49 +145,65 @@ impl OnEvent for SelectRecipients {
             let button = self.1.bumper().as_mut().unwrap().find::<Button>().unwrap();
             button.update_state(ctx, error, !error, &mut self.2);
         } if let Some(CreateMessageEvent) = event.downcast_ref::<CreateMessageEvent>() {
-            let id = uuid::Uuid::new_v4();
             let orange_names = self.1.content().find::<QuickDeselect>().unwrap().get_orange_names().unwrap();
             let mut rooms = ctx.state().get::<Rooms>();
 
-            if orange_names.len() == 1 {
-                for (id, room) in rooms.0.iter() {
-                    if room.authors.len() == 1 && room.authors[0] == orange_names[0] {
-                        let (on_return, with_nav) = MessagesHome::new(ctx);
-                        let page = DirectMessage::new(ctx, id, (on_return.into_boxed(), with_nav));
-                        ctx.trigger_event(NavigateEvent::new(page));
+            for (id, room) in rooms.0.iter() {
+                match room.authors.len() {
+                    1 if room.authors[0] == orange_names[0] => {
+                        // Direct already exists
+                        self.3 = Some(*id);
+                        ctx.trigger_event(NavigateEvent(2));
                         return true;
+                    }
+                    _ => {
+                        let a: HashSet<_> = orange_names.iter().cloned().collect();
+                        let b: HashSet<_> = room.authors.iter().cloned().collect();
+
+                        if a == b {
+                            // Group alerady exists
+                            self.3 = Some(*id);
+                            ctx.trigger_event(NavigateEvent(1));
+                            return true;
+                        }
                     }
                 }
             }
 
             println!("create dm");
-            let (page, with_nav) = match orange_names.len() > 1 { 
-                true => {
-                    let (page, with_nav) = GroupMessage::new(ctx, &id);
-                    (page.into_boxed(), with_nav) 
-                },
-                false => { 
-                    let (on_return, with_nav) = MessagesHome::new(ctx);
-                    let (page, with_nav) = DirectMessage::new(ctx, &id, (on_return.into_boxed(), with_nav));
-                    (page.into_boxed(), with_nav)
-                }
+            let id = uuid::Uuid::new_v4();
+            let trigger_event = match orange_names.len() > 1 { 
+                true => |ctx: &mut Context| ctx.trigger_event(NavigateEvent(1)),
+                false => |ctx: &mut Context| ctx.trigger_event(NavigateEvent(2))
             };
 
+            self.3 = Some(id);
             rooms.add(Room::new(orange_names.clone()), id);
             ctx.state().set(&rooms);
-            ctx.trigger_event(NavigateEvent(Some(page), with_nav));
+            trigger_event(ctx);
         }
         true
     }
 }
 
-#[derive(Debug, Component, AppPage)]
-pub struct DirectMessage(Stack, Page, #[skip] uuid::Uuid);
+#[derive(Debug, Component)]
+pub struct DirectMessage(Stack, Page, #[skip] uuid::Uuid, #[skip] OrangeName, #[skip] Option<Box<dyn AppPage>>);
+
+impl AppPage for DirectMessage {
+    fn has_nav(&self) -> bool { true }
+    fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
+        match index {
+            0 => Ok(self.4.take().unwrap()),
+            1 => Ok(Box::new(UserAccount::new(ctx, self.3, self.4.take().unwrap()))),
+            _ => Err(self),
+        }
+    }
+}
 
 impl DirectMessage {
-    pub fn new(ctx: &mut Context, room_id: &uuid::Uuid, account_return: (Box<dyn AppPage>, bool)) -> (Self, bool) {
+    pub fn new(ctx: &mut Context, room_id: uuid::Uuid, account_return: Box<dyn AppPage>) -> Self {
         let rooms = ctx.state().get::<Rooms>();
-        let room = rooms.0.get(room_id).unwrap();
+        let room = rooms.0.get(&room_id).unwrap();
 
         let profiles = ctx.state().get::<Profiles>();
         let orange_name = room.authors[0].clone();
@@ -177,7 +219,7 @@ impl DirectMessage {
             .then(|| format!("You blocked {}. Unblock to message.", username))
             .or_else(|| blocked_me.then(|| format!("{} has blocked you.", username)))
             .map(|msg| Box::new(Alert::new(ctx, msg.as_str())) as Box<dyn Drawable>)
-            .unwrap_or_else(|| Box::new(TextInputMessages::new(ctx, *room_id)) as Box<dyn Drawable>);
+            .unwrap_or_else(|| Box::new(TextInputMessages::new(ctx, room_id)) as Box<dyn Drawable>);
 
         let offset = if room.messages.is_empty() {Offset::Center} else {Offset::End};
 
@@ -189,27 +231,13 @@ impl DirectMessage {
             Box::new(TextMessageGroup::new(ctx, &room.messages, MessageType::Contact)) as Box<dyn Drawable>
         });
 
-        let account_return = Arc::new(Mutex::new(Some(account_return)));
-
-        let back_account_return = account_return.clone();
-        let back = IconButton::navigation(ctx, "left", move |ctx: &mut Context| {
-            let page = back_account_return.lock().unwrap().take().unwrap();
-            ctx.trigger_event(NavigateEvent(Some(page.0), page.1));
-        });
-
-        let info_orange_name = orange_name.clone();
-        let info_account_return = account_return.clone();
-        let room_id = room_id.clone();
-        let info = IconButton::navigation(ctx, "info", move |ctx: &mut Context| {
-            let (on_return, with_nav) = Self::new(ctx, &room_id, info_account_return.lock().unwrap().take().unwrap());
-            let page = UserAccount::new(ctx, &info_orange_name, (on_return.into_boxed(), with_nav));
-            ctx.trigger_event(NavigateEvent::new(page))
-        });
+        let back = IconButton::navigation(ctx, "left", move |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
+        let info = IconButton::navigation(ctx, "info", move |ctx: &mut Context| ctx.trigger_event(NavigateEvent(1)));
 
         let bumper = Bumper::new(ctx, vec![bumper]);
         let content = Content::new(offset, vec![content]);
-        let header = HeaderMessages::new(ctx, Some(back), Some(info), vec![orange_name]);
-        (DirectMessage(Stack::center(), Page::new(header, content, Some(bumper)), room_id), false)
+        let header = HeaderMessages::new(ctx, Some(back), Some(info), vec![orange_name.clone()]);
+        DirectMessage(Stack::center(), Page::new(header, content, Some(bumper)), room_id, orange_name, Some(account_return))
     }
 }
 
@@ -235,13 +263,24 @@ impl OnEvent for DirectMessage {
     }
 }
 
-#[derive(Debug, Component, AppPage)]
+#[derive(Debug, Component)]
 pub struct GroupMessage(Stack, Page, #[skip] uuid::Uuid);
 
+impl AppPage for GroupMessage {
+    fn has_nav(&self) -> bool { true }
+    fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
+        match index {
+            0 => Ok(Box::new(MessagesHome::new(ctx))),
+            1 => Ok(Box::new(GroupInfo::new(ctx, self.2))),
+            _ => Err(self),
+        }
+    }
+}
+
 impl GroupMessage {
-    pub fn new(ctx: &mut Context, room_id: &uuid::Uuid) -> (Self, bool) {
+    pub fn new(ctx: &mut Context, room_id: uuid::Uuid) -> Self {
         let rooms = ctx.state().get::<Rooms>();
-        let room = rooms.0.get(room_id).unwrap();
+        let room = rooms.0.get(&room_id).unwrap();
         let room_id = room_id.clone();
 
         let offset = if room.messages.is_empty() {Offset::Center} else {Offset::End};
@@ -254,20 +293,13 @@ impl GroupMessage {
 
         let input = TextInputMessages::new(ctx, room_id);
        
-        let back = IconButton::navigation(ctx, "left", |ctx: &mut Context| {
-            let page = MessagesHome::new(ctx);
-            ctx.trigger_event(NavigateEvent::new(page))
-        });
-
-        let info = IconButton::navigation(ctx, "info", move |ctx: &mut Context| {
-            let page = GroupInfo::new(ctx, &room_id);
-            ctx.trigger_event(NavigateEvent::new(page))
-        });
+        let back = IconButton::navigation(ctx, "left", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
+        let info = IconButton::navigation(ctx, "info", move |ctx: &mut Context| ctx.trigger_event(NavigateEvent(1)));
 
         let bumper = Bumper::new(ctx, vec![Box::new(input)]);
         let content = Content::new(offset, vec![content]);
         let header = HeaderMessages::new(ctx, Some(back), Some(info), room.authors.clone());
-        (GroupMessage(Stack::center(), Page::new(header, content, Some(bumper)), room_id), false)
+        GroupMessage(Stack::center(), Page::new(header, content, Some(bumper)), room_id)
     }
 }
 
@@ -293,39 +325,50 @@ impl OnEvent for GroupMessage {
     }
 }
 
-#[derive(Debug, Component, AppPage)]
-pub struct GroupInfo(Stack, Page);
-impl OnEvent for GroupInfo {}
+#[derive(Debug, Component)]
+pub struct GroupInfo(Stack, Page, #[skip] uuid::Uuid, #[skip] Option<OrangeName>);
+
+impl AppPage for GroupInfo {
+    fn has_nav(&self) -> bool { true }
+    fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
+        match index {
+            0 => Ok(Box::new(GroupMessage::new(ctx, self.2))),
+            1 => Ok(Box::new(UserAccount::new(ctx, self.3.as_ref().unwrap().clone(), self))),
+            _ => Err(self),
+        }
+    }
+}
 
 impl GroupInfo {
-    pub fn new(ctx: &mut Context, room_id: &uuid::Uuid) -> (Self, bool) {
+    pub fn new(ctx: &mut Context, room_id: uuid::Uuid) -> Self {
         let mut rooms = ctx.state().get::<Rooms>();
         let room = rooms.0.get_mut(&room_id).unwrap();
         let room_id = room_id.clone(); 
         let contacts = room.authors.iter().map(|orange_name| {
             let new_profile = orange_name.clone();
-            ListItemMessages::contact(ctx, &orange_name,
-                move |ctx: &mut Context| {
-                    let (on_return, with_nav) = Self::new(ctx, &room_id);
-                    let page = UserAccount::new(ctx, &new_profile.clone(), (on_return.into_boxed(), with_nav));
-                    ctx.trigger_event(NavigateEvent::new(page))
-                }
-            )
+            ListItemMessages::contact(ctx, &orange_name, move |ctx: &mut Context| {
+                ctx.trigger_event(OpenAccountEvent(new_profile.clone()));
+                ctx.trigger_event(NavigateEvent(1));
+            })
         }).collect::<Vec<ListItem>>();
 
         let text_size = ctx.theme.fonts.size.md;
         let members = format!("This group has {} members.", contacts.len());
         let text = Text::new(ctx, &members, TextStyle::Secondary, text_size, Align::Center);
         let content = Content::new(Offset::Start, vec![Box::new(text), Box::new(ListItemGroup::new(contacts))]);
-
-        let room_id = room_id.clone(); 
-        let back = IconButton::navigation(ctx, "left", move |ctx: &mut Context| {
-            let page = GroupMessage::new(ctx, &room_id);
-            ctx.trigger_event(NavigateEvent::new(page))
-        });
+ 
+        let back = IconButton::navigation(ctx, "left", move |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let header = Header::stack(ctx, Some(back), "Group Message Info", None);
-        (GroupInfo(Stack::center(), Page::new(header, content, None)), false)
+        GroupInfo(Stack::center(), Page::new(header, content, None), room_id, None)
     }
 }
 
+impl OnEvent for GroupInfo {
+    fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
+        if let Some(OpenAccountEvent(orange_name)) = event.downcast_ref::<OpenAccountEvent>() {
+            self.3 = Some(orange_name.clone());
+        }
+        true
+    }
+}
