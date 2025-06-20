@@ -1,4 +1,3 @@
-use profiles::service::Profile;
 use pelican_ui::events::Event;
 use pelican_ui::Context;
 

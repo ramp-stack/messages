@@ -1,23 +1,13 @@
-use pelican_ui::events::OnEvent;
-use pelican_ui::drawable::{Drawable, Component, Align};
-use pelican_ui::layout::{Area, SizeRequest, Layout};
-use pelican_ui::{Context, Component};
-
-use profiles::components::AvatarContentProfiles;
-use profiles::service::{Profiles, Name};
-use profiles::OrangeName;
-
-use chrono::Duration;
+use pelican_ui::Context;
+use profiles::plugin::Name;
 
 use crate::{Message, Rooms};
-use crate::components::AvatarMessages;
 
-use pelican_ui_std::{
-    TextInput, ClearActiveInput,
-};
+use pelican_ui_std::{TextInput, ClearActiveInput};
 
 pub struct TextInputMessages;
 impl TextInputMessages {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(ctx: &mut Context, current_room_id: uuid::Uuid) -> TextInput {
         TextInput::new(ctx, None, None, "Message...", None, 
             Some(("send", 

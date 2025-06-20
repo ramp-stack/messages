@@ -24,16 +24,16 @@ use pelican_ui_std::{
 };
 
 use crate::events::{RemoveContactEvent, AddContactEvent};
-use crate::{Room, Rooms};
+use crate::Rooms;
 
 pub struct ListItemMessages;
 
 impl ListItemMessages {
     pub fn contact(ctx: &mut Context, orange_name: &OrangeName, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
         let profiles = ctx.state().get::<Profiles>();
-        let profile = profiles.0.get(&orange_name).unwrap();
+        let profile = profiles.0.get(orange_name).unwrap();
         let name = profile.get("username").unwrap();
-        let data = AvatarContentProfiles::from_orange_name(ctx, &orange_name);
+        let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
         ListItem::new(ctx, true, name, None, Some(orange_name.to_string().as_str()), None, None, None, None, Some(data), None, on_click)
     }
 
@@ -44,7 +44,7 @@ impl ListItemMessages {
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
         let contact = orange_name.clone();
         ListItem::new(
-            ctx, true, &name, None, Some(contact.to_string().as_str()), None, None, None, None, Some(data), None, 
+            ctx, true, name, None, Some(contact.to_string().as_str()), None, None, None, None, Some(data), None, 
             move |ctx: &mut Context| ctx.trigger_event(AddContactEvent(contact.clone()))
         )
     }
@@ -54,20 +54,19 @@ impl ListItemMessages {
         let room = rooms.0.get(room_id).unwrap();
         let orange_name = &room.authors[0];
         let profiles = ctx.state().get::<Profiles>();
-        let profile = profiles.0.get(&orange_name).unwrap();
+        let profile = profiles.0.get(orange_name).unwrap();
         let name = profile.get("username").unwrap();
-        let data = AvatarContentProfiles::from_orange_name(ctx, &orange_name);
+        let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
         let recent = &room.messages.last().map(|m| m.message.clone()).unwrap_or("No messages yet.".to_string());
-        ListItem::new(ctx, true, name, None, Some(&recent), None, None, None, None, Some(data), None, on_click)
+        ListItem::new(ctx, true, name, None, Some(recent), None, None, None, None, Some(data), None, on_click)
     }
 
     pub fn group_message(ctx: &mut Context, room_id: &uuid::Uuid, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
         let rooms = ctx.state().get::<Rooms>();
         let room = rooms.0.get(room_id).unwrap();
-        let profiles = ctx.state().get::<Profiles>();
         let names = room.authors.iter().map(|orange_name| {
             let profiles = ctx.state().get::<Profiles>();
-            let profile = profiles.0.get(&orange_name).unwrap();
+            let profile = profiles.0.get(orange_name).unwrap();
             profile.get("username").unwrap().to_string()
         }).collect::<Vec<String>>();
         let names = names.join(", ");
@@ -144,7 +143,7 @@ impl QuickDeselectButton {
         let profile = profiles.0.get(&orange_name).unwrap();
         let name = profile.get("username").unwrap();
         let contact_name = orange_name.clone();
-        let button = Button::secondary(ctx, None, &name, Some("close"), move |ctx: &mut Context| {
+        let button = Button::secondary(ctx, None, name, Some("close"), move |ctx: &mut Context| {
             ctx.trigger_event(RemoveContactEvent(contact_name.clone()))
         });
         QuickDeselectButton(Stack::default(), button, orange_name.clone())

@@ -24,7 +24,6 @@ use pelican_ui_std::{
     Timestamp,
     Row,
     Avatar,
-    AvatarContent,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -63,7 +62,7 @@ impl TextMessage {
         TextMessage (
             Row::new(8.0, offset, Size::Fit, Padding::default()),
             avatar.then(|| AvatarMessages::new(ctx, avatar_content)),
-            MessageContent::new(ctx, style, messages, &username, timestamp)
+            MessageContent::new(ctx, style, messages, username, timestamp)
         )
     }
 

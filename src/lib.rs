@@ -75,8 +75,6 @@ impl Rooms {
 
 fn fake_rooms(ctx: &mut Context) -> BTreeMap<Uuid, Room> {
     let dt1 = "2025-05-19T08:12:45Z".parse::<DateTime<Utc>>().unwrap().with_timezone(&Local);
-    let dt2 = "2025-05-19T10:34:02Z".parse::<DateTime<Utc>>().unwrap().with_timezone(&Local);
-    let dt3 = "2025-05-19T12:55:19Z".parse::<DateTime<Utc>>().unwrap().with_timezone(&Local);
     let testers = fake_profiles(ctx); 
     let a = testers[0].0.clone();
     let b = testers[1].0.clone();
