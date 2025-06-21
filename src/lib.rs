@@ -11,6 +11,7 @@ use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc, Local};
 use uuid::Uuid;
 
+pub mod service;
 pub mod components;
 pub mod events;
 pub mod pages;
