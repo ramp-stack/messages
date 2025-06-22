@@ -2,29 +2,48 @@ use pelican_ui::events::{OnEvent, Event};
 use pelican_ui::drawable::{Drawable, Component};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
-
+use profiles::plugin::ProfilePlugin;
 use profiles::service::Profiles;
-use maverick_os::air::air;
-use air::orange_name::OrangeName;
+use pelican_ui::air::{OrangeName, Id};
 
 use profiles::components::AvatarContentProfiles;
 
 use pelican_ui_std::{
-    Stack,
-    Button,
-    Padding,
-    Offset,
-    Size,
-    Wrap,
+    Stack, Button,
+    Padding, Offset,
+    Size, Wrap,
     ListItemGroup,
     Column,
     ListItem,
     AvatarContent,
-    AvatarIconStyle
+    AvatarIconStyle,
+    NavigateEvent,
 };
 
-use crate::events::{RemoveContactEvent, AddContactEvent};
-use crate::Rooms;
+use crate::events::{RemoveContactEvent, AddContactEvent, SetRoomEvent};
+use crate::FakeRooms;
+use crate::Message;
+use crate::service::Room;
+
+pub struct ListItemGroupMessages;
+
+impl ListItemGroupMessages {
+    pub fn new(ctx: &mut Context, rooms: Vec<Room>) -> ListItemGroup {
+        let items = rooms.into_iter().map(|room| {
+            match room.1.len() > 1 {
+                true => ListItemMessages::group_message(ctx, room.1.clone(), move |ctx: &mut Context| {
+                    ctx.trigger_event(SetRoomEvent(room.clone()));
+                    ctx.trigger_event(NavigateEvent(1));
+                }),
+                false => ListItemMessages::direct_message(ctx, room.1.clone(), room.2.clone(), move |ctx: &mut Context| {
+                    ctx.trigger_event(SetRoomEvent(room.clone()));
+                    ctx.trigger_event(NavigateEvent(2));
+                })
+            }
+        }).collect::<Vec<ListItem>>();
+        ListItemGroup::new(items)
+    }
+}
 
 pub struct ListItemMessages;
 
@@ -49,22 +68,26 @@ impl ListItemMessages {
         )
     }
 
-    pub fn direct_message(ctx: &mut Context, room_id: &uuid::Uuid, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let rooms = ctx.state().get::<Rooms>();
-        let room = rooms.0.get(room_id).unwrap();
-        let orange_name = &room.authors[0];
-        let profiles = ctx.state().get::<Profiles>();
-        let profile = profiles.0.get(orange_name).unwrap();
+    pub fn direct_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
+        // let rooms = ctx.state().get::<FakeRooms>();
+        // let room = rooms.0.get(room_id).unwrap();
+        let me = ProfilePlugin::me(ctx).unwrap();
+        // let orange_name = &names.get(0).unwrap_or(&me);
+        // let profiles = ctx.state().get::<Profiles>();
+        // let profile = profiles.0.get(orange_name).unwrap();
+        let profile = me.1;
+        // println!("THIS {:?}", profile);
         let name = profile.get("username").unwrap();
-        let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
-        let recent = &room.messages.last().map(|m| m.message.clone()).unwrap_or("No messages yet.".to_string());
+        let data = AvatarContentProfiles::from_orange_name(ctx, &me.0);
+        // let recent = &room.messages.last().map(|m| m.message.clone()).unwrap_or("No messages yet.".to_string());
+        let recent = "No messages yet.";
         ListItem::new(ctx, true, name, None, Some(recent), None, None, None, None, Some(data), None, on_click)
     }
 
-    pub fn group_message(ctx: &mut Context, room_id: &uuid::Uuid, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let rooms = ctx.state().get::<Rooms>();
-        let room = rooms.0.get(room_id).unwrap();
-        let names = room.authors.iter().map(|orange_name| {
+    pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
+        // let rooms = ctx.state().get::<FakeRooms>();
+        // let room = rooms.0.get(room_id).unwrap();
+        let names = names.iter().map(|orange_name| {
             let profiles = ctx.state().get::<Profiles>();
             let profile = profiles.0.get(orange_name).unwrap();
             profile.get("username").unwrap().to_string()

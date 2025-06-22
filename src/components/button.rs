@@ -1,6 +1,6 @@
 use pelican_ui::Context;
 
-use crate::OrangeName;
+pelican_ui::air::OrangeName;
 use crate::service::Profile;
 use crate::pages::{UserAccount, DirectMessage};
 

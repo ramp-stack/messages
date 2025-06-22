@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "air"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -1917,6 +1917,7 @@ dependencies = [
  "pelican_ui_std",
  "profiles",
  "serde",
+ "serde_json",
  "uuid",
 ]
 

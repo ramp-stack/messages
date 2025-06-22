@@ -1,6 +1,5 @@
 use profiles::service::{Profile, Profiles};
-use maverick_os::air::air;
-use air::orange_name::{OrangeName, OrangeSecret};
+use pelican_ui::air::{OrangeName, OrangeSecret};
 
 use pelican_ui_std::Timestamp;
 use pelican_ui::Context;
@@ -11,20 +10,24 @@ use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc, Local};
 use uuid::Uuid;
 
+use crate::service::Message;
+
 pub mod components;
 pub mod events;
 pub mod pages;
+pub mod service;
+pub mod plugin;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Room {
+pub struct FakeRoom {
     pub authors: Vec<OrangeName>,
     pub messages: Vec<Message>
 }
 
-impl Room {
+impl FakeRoom {
     pub fn new(authors: Vec<OrangeName>) -> Self {
         println!("Made new room");
-        Room { authors, messages: vec![] }
+        FakeRoom { authors, messages: vec![] }
     }
 
     pub fn add_message(&mut self, new: Message) {
@@ -32,34 +35,16 @@ impl Room {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Message {
-    pub message: String,
-    pub timestamp: Timestamp,
-    pub author: OrangeName,
-}
-
-impl Message {
-    pub fn from(message: String, author: OrangeName) -> Self {
-        Message {
-            message,
-            timestamp: Timestamp::new(Local::now()),
-            author,
-        }
-    }
-}
-
-
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
-pub struct Rooms(pub BTreeMap<uuid::Uuid, Room>);
+pub struct FakeRooms(pub BTreeMap<uuid::Uuid, FakeRoom>);
 
-impl Rooms {
+impl FakeRooms {
     pub fn new(ctx: &mut Context) -> Self {
         println!("MAKING NEW ROOMS");
-        Rooms(fake_rooms(ctx))
+        FakeRooms(fake_rooms(ctx))
     }
 
-    pub fn add(&mut self, room: Room, id: uuid::Uuid) {
+    pub fn add(&mut self, room: FakeRoom, id: uuid::Uuid) {
         self.0.insert(id, room);
     }
 }
@@ -73,7 +58,7 @@ impl Rooms {
 //     }
 // }
 
-fn fake_rooms(ctx: &mut Context) -> BTreeMap<Uuid, Room> {
+fn fake_rooms(ctx: &mut Context) -> BTreeMap<Uuid, FakeRoom> {
     let dt1 = "2025-05-19T08:12:45Z".parse::<DateTime<Utc>>().unwrap().with_timezone(&Local);
     let testers = fake_profiles(ctx); 
     let a = testers[0].0.clone();
@@ -81,50 +66,17 @@ fn fake_rooms(ctx: &mut Context) -> BTreeMap<Uuid, Room> {
     let c = testers[2].0.clone();
 
     let test_rooms_data = vec![
-        Room {
+        FakeRoom {
             authors: vec![a.clone()],
-            messages: vec![
-                Message {
-                    message: "hey".to_string(),
-                    timestamp: Timestamp::new(dt1),
-                    author: a.clone(),
-                },
-                Message {
-                    message: "hello??".to_string(),
-                    timestamp: Timestamp::new(dt1),
-                    author: a.clone(),
-                },
-            ],
+            messages: vec![],
         },
-        Room {
+        FakeRoom {
             authors: vec![a.clone(), b.clone()],
-            messages: vec![
-                Message {
-                    message: "you there?".to_string(),
-                    timestamp: Timestamp::new(dt1),
-                    author: a.clone(),
-                },
-                Message {
-                    message: "yeah, why?".to_string(),
-                    timestamp: Timestamp::new(dt1),
-                    author: b.clone(),
-                },
-            ],
+            messages: vec![],
         },
-        Room {
+        FakeRoom {
             authors: vec![c.clone()],
-            messages: vec![
-                Message {
-                    message: "been wanting to say...".to_string(),
-                    timestamp: Timestamp::new(dt1),
-                    author: c.clone(),
-                },
-                Message {
-                    message: "how u beeeeen??".to_string(),
-                    timestamp: Timestamp::new(dt1),
-                    author: c.clone(),
-                },
-            ],
+            messages: vec![],
         },
     ];
 

@@ -1,7 +1,7 @@
 use pelican_ui::Context;
 use pelican_ui::drawable::Align;
 use profiles::components::AvatarContentProfiles;
-use profiles::OrangeName;
+use pelican_ui::air::OrangeName;
 use profiles::plugin::Profiles;
 
 use pelican_ui_std::{

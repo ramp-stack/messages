@@ -1,8 +1,7 @@
 use pelican_ui::events::Event;
 use pelican_ui::Context;
-
-use maverick_os::air::air;
-use air::orange_name::OrangeName;
+use pelican_ui::air::{OrangeName, Id};
+use crate::Message;
 
 #[derive(Debug, Clone)]
 pub struct AddContactEvent(pub OrangeName);
@@ -41,9 +40,9 @@ impl Event for OpenAccountEvent {
 }
 
 #[derive(Debug, Clone)]
-pub struct SetRoomIdEvent(pub uuid::Uuid);
+pub struct SetRoomEvent(pub (Id, Vec<OrangeName>, Vec<Message>));
 
-impl Event for SetRoomIdEvent {
+impl Event for SetRoomEvent {
     fn pass(self: Box<Self>, _ctx: &mut Context, children: Vec<((f32, f32), (f32, f32))>) -> Vec<Option<Box<dyn Event>>> {
         children.into_iter().map(|_| Some(self.clone() as Box<dyn Event>)).collect()
     }

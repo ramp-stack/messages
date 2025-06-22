@@ -5,7 +5,7 @@ use pelican_ui::{Context, Component};
 
 use profiles::components::AvatarContentProfiles;
 use profiles::service::{Profiles, Name};
-use profiles::OrangeName;
+use pelican_ui::air::OrangeName;
 
 use chrono::Duration;
 
@@ -201,20 +201,20 @@ impl TextMessageGroup {
         let mut last_time = None;
 
         for msg in messages {
-            let time = msg.timestamp.to_datetime();
-            let author = msg.author.clone();
+            let time = msg.timestamp().to_datetime();
+            let author = msg.author().clone();
 
             let same_author = Some(author.clone()) == last_author;
             let close_time = last_time.map(|t| (time - t) <= Duration::minutes(1)).unwrap_or(false);
 
             if same_author && close_time {
-                section.push(msg.message.clone());
+                section.push(msg.message().clone());
                 last_time = Some(time);
             } else {
                 if let (Some(author), Some(time)) = (last_author, last_time) {
                     result.push(TextMessage::new(ctx, style, section, author, Timestamp::new(time)));
                 }
-                section = vec![msg.message.clone()];
+                section = vec![msg.message().clone()];
                 last_author = Some(author);
                 last_time = Some(time);
             }
