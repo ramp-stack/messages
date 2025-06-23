@@ -60,7 +60,7 @@ impl MessagesHome {
             true => Content::new(Offset::Center, vec![Box::new(instructions)])
         };
 
-        MessagesHome(Stack::center(), Page::new(header, content, Some(bumper)), None, len)
+        MessagesHome(Stack::center(), Page::new(Some(header), content, Some(bumper)), None, len)
     }
 }
 
@@ -142,7 +142,7 @@ impl SelectRecipients {
         let button = Button::disabled(ctx, "Continue", move |ctx: &mut Context| ctx.trigger_event(CreateMessageEvent));
 
         let bumper = Bumper::single_button(ctx, button);
-        SelectRecipients(Stack::center(), Page::new(header, content, Some(bumper)), ButtonState::Default, None)
+        SelectRecipients(Stack::center(), Page::new(Some(header), content, Some(bumper)), ButtonState::Default, None)
     }
 }
 
@@ -222,15 +222,14 @@ impl AppPage for DirectMessage {
 impl DirectMessage {
     pub fn new(ctx: &mut Context, room: Room, account_return: Box<dyn AppPage>) -> Self {
         let profiles = ctx.state().get_or_default::<Profiles>().clone();
-        let me = ProfilePlugin::me(ctx).unwrap().0;
+        let me = ProfilePlugin::me(ctx).0;
         let orange_name = room.1.get(0).unwrap_or(&me).clone();
 
         let user = profiles.0.get(&orange_name).unwrap();
         let username = user.get("username").unwrap();
 
-        let my_orange_name = ProfilePlugin::me(ctx).unwrap().0;
-        let is_blocked = ProfilePlugin::has_blocked(ctx, &my_orange_name, &orange_name);
-        let blocked_me = ProfilePlugin::has_blocked(ctx, &orange_name, &my_orange_name);
+        let is_blocked = ProfilePlugin::has_blocked(ctx, &me, &orange_name);
+        let blocked_me = ProfilePlugin::has_blocked(ctx, &orange_name, &me);
 
         let bumper: Box<dyn Drawable> = is_blocked
             .then(|| format!("You blocked {}. Unblock to message.", username))
@@ -254,7 +253,7 @@ impl DirectMessage {
         let bumper = Bumper::new(ctx, vec![bumper]);
         let content = Content::new(offset, vec![content]);
         let header = HeaderMessages::new(ctx, Some(back), Some(info), vec![orange_name.clone()]);
-        DirectMessage(Stack::center(), Page::new(header, content, Some(bumper)), room, orange_name, Some(account_return))
+        DirectMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room, orange_name, Some(account_return))
     }
 }
 
@@ -308,7 +307,7 @@ impl GroupMessage {
         let bumper = Bumper::new(ctx, vec![Box::new(input)]);
         let content = Content::new(offset, vec![content]);
         let header = HeaderMessages::new(ctx, Some(back), Some(info), room.1.clone());
-        GroupMessage(Stack::center(), Page::new(header, content, Some(bumper)), room)
+        GroupMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room)
     }
 }
 
@@ -364,7 +363,7 @@ impl GroupInfo {
         let back = IconButton::navigation(ctx, "left", move |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let header = Header::stack(ctx, Some(back), "Group Message Info", None);
-        GroupInfo(Stack::center(), Page::new(header, content, None), room, None)
+        GroupInfo(Stack::center(), Page::new(Some(header), content, None), room, None)
     }
 }
 

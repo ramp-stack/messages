@@ -71,7 +71,7 @@ impl ListItemMessages {
     pub fn direct_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
         // let rooms = ctx.state().get::<FakeRooms>();
         // let room = rooms.0.get(room_id).unwrap();
-        let me = ProfilePlugin::me(ctx).unwrap();
+        let me = ProfilePlugin::me(ctx);
         // let orange_name = &names.get(0).unwrap_or(&me);
         // let profiles = ctx.state().get::<Profiles>();
         // let profile = profiles.0.get(orange_name).unwrap();

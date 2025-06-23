@@ -3,6 +3,7 @@ use pelican_ui::drawable::{Drawable, Component, Align};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
 
+use profiles::plugin::ProfilePlugin;
 use profiles::components::AvatarContentProfiles;
 use profiles::service::{Profiles, Name};
 use pelican_ui::air::OrangeName;
@@ -47,7 +48,7 @@ impl TextMessage {
         author: OrangeName,
         timestamp: Timestamp
     ) -> Self {
-        if author == ctx.state().get_or_default::<Name>().clone().0.unwrap() { style = MessageType::You; }
+        if author == ProfilePlugin::me(ctx).0 { style = MessageType::You; }
         let profiles = ctx.state().get_or_default::<Profiles>().clone();
         let profile = profiles.0.get(&author).unwrap();
         let username = profile.get("username").unwrap();

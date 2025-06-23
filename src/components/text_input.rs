@@ -14,7 +14,7 @@ impl TextInputMessages {
             Some(("send", 
                 move |ctx: &mut Context, string: &mut String| {
                     if !string.is_empty() {
-                        let me = ProfilePlugin::me(ctx).unwrap().0;
+                        let me = ProfilePlugin::me(ctx).0;
                         let message = Message::from(string.to_string(), me);
                         MessagesPlugin::create_message(ctx, current_room_id, message);
                         ctx.trigger_event(ClearActiveInput);
