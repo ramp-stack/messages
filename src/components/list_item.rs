@@ -49,7 +49,7 @@ pub struct ListItemMessages;
 
 impl ListItemMessages {
     pub fn contact(ctx: &mut Context, orange_name: &OrangeName, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let profiles = ctx.state().get::<Profiles>();
+        let profiles = ctx.state().get_or_default::<Profiles>().clone();
         let profile = profiles.0.get(orange_name).unwrap();
         let name = profile.get("username").unwrap();
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
@@ -57,7 +57,7 @@ impl ListItemMessages {
     }
 
     pub fn recipient(ctx: &mut Context, orange_name: &OrangeName) -> ListItem {
-        let profiles = ctx.state().get::<Profiles>();
+        let profiles = ctx.state().get_or_default::<Profiles>().clone();
         let profile = profiles.0.get(orange_name).unwrap();
         let name = profile.get("username").unwrap();
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
@@ -88,7 +88,7 @@ impl ListItemMessages {
         // let rooms = ctx.state().get::<FakeRooms>();
         // let room = rooms.0.get(room_id).unwrap();
         let names = names.iter().map(|orange_name| {
-            let profiles = ctx.state().get::<Profiles>();
+            let profiles = ctx.state().get_or_default::<Profiles>().clone();
             let profile = profiles.0.get(orange_name).unwrap();
             profile.get("username").unwrap().to_string()
         }).collect::<Vec<String>>();
@@ -162,7 +162,7 @@ impl OnEvent for QuickDeselectButton {}
 
 impl QuickDeselectButton {
     fn new(ctx: &mut Context, orange_name: OrangeName) -> Self {
-        let profiles = ctx.state().get::<Profiles>();
+        let profiles = ctx.state().get_or_default::<Profiles>().clone();
         let profile = profiles.0.get(&orange_name).unwrap();
         let name = profile.get("username").unwrap();
         let contact_name = orange_name.clone();

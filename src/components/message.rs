@@ -47,8 +47,8 @@ impl TextMessage {
         author: OrangeName,
         timestamp: Timestamp
     ) -> Self {
-        if author == ctx.state().get::<Name>().0.unwrap() { style = MessageType::You; }
-        let profiles = ctx.state().get::<Profiles>();
+        if author == ctx.state().get_or_default::<Name>().clone().0.unwrap() { style = MessageType::You; }
+        let profiles = ctx.state().get_or_default::<Profiles>().clone();
         let profile = profiles.0.get(&author).unwrap();
         let username = profile.get("username").unwrap();
         let avatar_content = AvatarContentProfiles::from_orange_name(ctx, &author);

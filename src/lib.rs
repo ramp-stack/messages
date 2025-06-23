@@ -105,7 +105,7 @@ pub fn fake_profiles(ctx: &mut Context) -> Vec<(OrangeName, Profile)> {
         ]))
     ];
 
-    let mut profiles = ctx.state().get::<Profiles>().0;
+    let mut profiles = ctx.state().get_or_default::<Profiles>().clone().0;
     profiles.insert(testers[0].0.clone(), testers[0].1.clone());
     profiles.insert(testers[1].0.clone(), testers[1].1.clone());
     profiles.insert(testers[2].0.clone(), testers[2].1.clone());
@@ -151,7 +151,7 @@ pub fn fake_profiles(ctx: &mut Context) -> Vec<(OrangeName, Profile)> {
         ("biography".to_string(), "Talks to plants. They talk back. That's a lie.".to_string()),
     ]));
 
-    ctx.state().set(&Profiles(profiles));
+    ctx.state().set(Profiles(profiles));
 
     testers
 }

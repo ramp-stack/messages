@@ -27,7 +27,7 @@ impl HeaderContentMessages {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(ctx: &mut Context, profiles: Vec<OrangeName>) -> HeaderContent {
         let profiles = profiles.iter().map(|orange_name| { 
-            let profiles = ctx.state().get::<Profiles>();
+            let profiles = ctx.state().get_or_default::<Profiles>().clone();
             let profile = profiles.0.get(orange_name).unwrap();
             let username = profile.get("username").unwrap();
             (username.to_string(), AvatarContentProfiles::from_orange_name(ctx, orange_name))

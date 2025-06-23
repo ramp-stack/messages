@@ -50,7 +50,7 @@ impl MessagesHome {
         let new_message = Button::primary(ctx, "New Message", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let bumper = Bumper::single_button(ctx, new_message);
-        let rooms = ctx.state().get::<Rooms>().0;
+        let rooms = ctx.state().get_or_default::<Rooms>().clone().0;
         let len = rooms.len();
         let text_size = ctx.theme.fonts.size.md;
         let instructions = ExpandableText::new(ctx, "No messages yet.\nGet started by messaging a friend.", TextStyle::Secondary, text_size, Align::Center);
@@ -67,15 +67,15 @@ impl MessagesHome {
 impl OnEvent for MessagesHome {
     fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
         if let Some(TickEvent) = event.downcast_ref::<TickEvent>() {
-            let rooms = ctx.state().get::<Rooms>().0;
+            let rooms = ctx.state().get_or_default::<Rooms>().clone().0;
             if self.3 != rooms.len() {
                 println!("INEQUAL rooms");
                 println!("CONTENT {:?}", self.1.content());
                 if let Some(group) = self.1.content().find::<ListItemGroup>() {
                     let mut missing = Vec::new(); 
-                    for i in self.3..rooms.len() {
-                        missing.push(rooms[i].clone());
-                    }
+                    rooms.iter().skip(self.3).map(|item| {
+                        missing.push(item.clone());
+                    });
                     self.3 += missing.len();
                     // println!("BRAND NEW FOUND {:?}", missing);
                     *group = ListItemGroupMessages::new(ctx, missing);
@@ -119,7 +119,7 @@ impl SelectRecipients {
         let icon_button = None::<(&'static str, fn(&mut Context, &mut String))>;
         let searchbar = TextInput::new(ctx, None, None, "Profile name...", None, icon_button);
 
-        let profiles = ctx.state().get::<Profiles>().0;
+        let profiles = ctx.state().get_or_default::<Profiles>().clone().0;
 
         // let recipients = profiles.keys().map(|orange_name| {
         //     ListItemMessages::recipient(ctx, orange_name)
@@ -221,7 +221,7 @@ impl AppPage for DirectMessage {
 
 impl DirectMessage {
     pub fn new(ctx: &mut Context, room: Room, account_return: Box<dyn AppPage>) -> Self {
-        let profiles = ctx.state().get::<Profiles>();
+        let profiles = ctx.state().get_or_default::<Profiles>().clone();
         let me = ProfilePlugin::me(ctx).unwrap().0;
         let orange_name = room.1.get(0).unwrap_or(&me).clone();
 

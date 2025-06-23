@@ -141,7 +141,7 @@ impl Service for RoomsSync {
     }
 
     fn callback(state: &mut State, response: Self::Send) {
-        state.set(&Rooms(response))
+        state.set(Rooms(response))
     }
 }
 
