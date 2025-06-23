@@ -13,7 +13,7 @@ use pelican_ui_std::Timestamp;
 use serde::{Serialize, Deserialize};
 use chrono::Local;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Message(String, Timestamp, OrangeName);
 impl Message {
     pub fn from(message: String, author: OrangeName) -> Self {
@@ -28,12 +28,19 @@ impl Message {
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Rooms(pub Vec<Room>);
 
+impl Rooms {
+    pub fn get(&mut self, id: Id) -> Option<&mut Room> {
+        self.0.iter_mut().find(|i| *i.0 == *id)
+    }
+}
+
 pub type Room = (Id, Vec<OrangeName>, Vec<Message>);
 
 static ROOMS: LazyLock<Id> = LazyLock::new(|| Id::hash(&"RoomsV1".to_string()));
 static MESSAGES: LazyLock<Id> = LazyLock::new(|| Id::hash(&"MessagesV1".to_string()));
 
 const ROOMS_PERMISSIONS: Permissions = Permissions::new(Some((true, true)), None, BTreeMap::new());
+const MESSAGES_PERMISSIONS: Permissions = Permissions::new(None, None, BTreeMap::new());
 
 static ROOMS_PROTOCOL: LazyLock<Protocol> = LazyLock::new(|| {
     let cv = ChildrenValidation::new(vec![*MESSAGES], true, true, false);
@@ -91,8 +98,8 @@ impl Service for RoomsService {
                     println!("Room successfully created.");
                 },
                 RoomsRequest::CreateMessage(room, message) => {
-                    let mut x = *cache.rooms.get(&RecordPath::root().join(room)).unwrap();
-                    while let (path, Some(_)) = AirService::create_private(ctx, RecordPath::root().join(room), MESSAGES_PROTOCOL.clone(), x, ROOMS_PERMISSIONS, serde_json::to_vec(&message)?).await? {
+                    let mut x = cache.rooms.get(&RecordPath::root().join(room)).unwrap().1;
+                    while let (path, Some(_)) = AirService::create_private(ctx, RecordPath::root().join(room), MESSAGES_PROTOCOL.clone(), x, MESSAGES_PERMISSIONS, serde_json::to_vec(&message)?).await? {
                         x += 1;
                     }
                 }
@@ -136,14 +143,24 @@ impl Service for RoomsSync {
         while let (path, Some(time)) = AirService::discover(ctx, RecordPath::root(), self.cache.rooms_idx, vec![ROOMS_PROTOCOL.clone()]).await? {
             println!("new room");
             if let Some(path) = path {
-                self.cache.rooms.entry(path).or_insert(0);
+                self.cache.rooms.entry(path).or_insert((vec![], 0));
                 mutated = true;
             }
             self.cache.rooms_idx += 1;
         }
+        for (room, (messages, index)) in &mut self.cache.rooms {
+            while let (path, Some(time)) = AirService::discover(ctx, room.clone(), *index, vec![MESSAGES_PROTOCOL.clone()]).await? {
+                if let Some(path) = path {
+                    let message: Message = serde_json::from_slice(&AirService::read_private(ctx, path).await?.unwrap().0.payload).unwrap();
+                    messages.insert(*index as usize, message);
+                    mutated = true;
+                }
+                *index += 1;
+            }
+        }
         if mutated || !self.init {
             self.init = true;
-            ctx.callback(self.cache.rooms.iter().map(|(p, _)| (p.last(), vec![], vec![])).collect())
+            ctx.callback(self.cache.rooms.iter().map(|(p, (m, _))| (p.last(), vec![], m.clone())).collect())
         }
         self.cache.cache(&mut ctx.hardware.cache).await;
         Ok(Some(Duration::from_secs(1)))
@@ -157,7 +174,7 @@ impl Service for RoomsSync {
 #[derive(Default, Debug, Serialize, Deserialize)]
 struct RoomsCache {
     pub rooms_idx: u32,
-    pub rooms: BTreeMap<RecordPath, u32>,
+    pub rooms: BTreeMap<RecordPath, (Vec<Message>, u32)>,
 }
 
 impl RoomsCache {

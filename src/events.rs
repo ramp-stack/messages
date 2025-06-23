@@ -40,7 +40,7 @@ impl Event for OpenAccountEvent {
 }
 
 #[derive(Debug, Clone)]
-pub struct SetRoomEvent(pub (Id, Vec<OrangeName>, Vec<Message>));
+pub struct SetRoomEvent(pub Id);
 
 impl Event for SetRoomEvent {
     fn pass(self: Box<Self>, _ctx: &mut Context, children: Vec<((f32, f32), (f32, f32))>) -> Vec<Option<Box<dyn Event>>> {

@@ -32,11 +32,11 @@ impl ListItemGroupMessages {
         let items = rooms.into_iter().map(|room| {
             match room.1.len() > 1 {
                 true => ListItemMessages::group_message(ctx, room.1.clone(), move |ctx: &mut Context| {
-                    ctx.trigger_event(SetRoomEvent(room.clone()));
+                    ctx.trigger_event(SetRoomEvent(room.0.clone()));
                     ctx.trigger_event(NavigateEvent(1));
                 }),
                 false => ListItemMessages::direct_message(ctx, room.1.clone(), room.2.clone(), move |ctx: &mut Context| {
-                    ctx.trigger_event(SetRoomEvent(room.clone()));
+                    ctx.trigger_event(SetRoomEvent(room.0.clone()));
                     ctx.trigger_event(NavigateEvent(2));
                 })
             }
@@ -69,19 +69,21 @@ impl ListItemMessages {
     }
 
     pub fn direct_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        // let rooms = ctx.state().get::<FakeRooms>();
-        // let room = rooms.0.get(room_id).unwrap();
-        let me = ProfilePlugin::me(ctx);
-        // let orange_name = &names.get(0).unwrap_or(&me);
-        // let profiles = ctx.state().get::<Profiles>();
-        // let profile = profiles.0.get(orange_name).unwrap();
-        let profile = me.1;
-        // println!("THIS {:?}", profile);
-        let name = profile.get("username").unwrap();
-        let data = AvatarContentProfiles::from_orange_name(ctx, &me.0);
-        // let recent = &room.messages.last().map(|m| m.message.clone()).unwrap_or("No messages yet.".to_string());
-        let recent = "No messages yet.";
-        ListItem::new(ctx, true, name, None, Some(recent), None, None, None, None, Some(data), None, on_click)
+        let (prefix, name, orange_name) = match names.get(0) {
+            Some(o_n) => {
+                let user = ctx.state().get_or_default::<Profiles>().0.get(&o_n).unwrap();
+                let name = user.get("username").unwrap().to_string();
+                (name.clone(), name, o_n.clone())
+            }
+            None => {
+                let me = ProfilePlugin::me(ctx).0;
+                ("You".to_string(), ProfilePlugin::get_username(ctx), me)
+            }
+        };
+        
+        let data = AvatarContentProfiles::from_orange_name(ctx, &orange_name);
+        let recent = &messages.last().map(|m| format!("{}: {}", prefix, m.message().clone())).unwrap_or("No messages yet.".to_string());
+        ListItem::new(ctx, true, &name, None, Some(recent), None, None, None, None, Some(data), None, on_click)
     }
 
     pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
