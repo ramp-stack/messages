@@ -113,6 +113,7 @@ impl Service for RoomsService {
 #[derive(Debug)]
 pub struct RoomsSync{
     cache: RoomsCache,
+    init: bool 
 }
 
 impl Services for RoomsSync {}
@@ -125,17 +126,25 @@ impl Service for RoomsSync {
     async fn new(hardware: &mut hardware::Context) -> Self {
         RoomsSync{
             cache: RoomsCache::from_cache(&mut hardware.cache).await,
+            init: false
         }
     }
 
     async fn run(&mut self, ctx: &mut ThreadContext<Self::Send, Self::Receive>) -> Result<Option<Duration>, runtime::Error> {
         let mut mutated = false;
-        while let Some((path, time)) = AirService::discover(ctx, RecordPath::root(), self.cache.rooms_idx, vec![ROOMS_PROTOCOL.clone()]).await? {
-            self.cache.rooms.entry(path).or_insert(0);
+        println!("Runing");
+        while let (path, Some(time)) = AirService::discover(ctx, RecordPath::root(), self.cache.rooms_idx, vec![ROOMS_PROTOCOL.clone()]).await? {
+            println!("new room");
+            if let Some(path) = path {
+                self.cache.rooms.entry(path).or_insert(0);
+                mutated = true;
+            }
             self.cache.rooms_idx += 1;
-            mutated = true;
         }
-        if mutated {ctx.callback(self.cache.rooms.iter().map(|(p, _)| (p.last(), vec![], vec![])).collect())}
+        if mutated || !self.init {
+            self.init = true;
+            ctx.callback(self.cache.rooms.iter().map(|(p, _)| (p.last(), vec![], vec![])).collect())
+        }
         self.cache.cache(&mut ctx.hardware.cache).await;
         Ok(Some(Duration::from_secs(1)))
     }
