@@ -24,27 +24,36 @@ use pelican_ui_std::{
 };
 
 use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 
 // use crate::MSGPlugin;
 // use crate::msg::{CurrentRoom, CurrentProfile};
 
-#[derive(Debug, Component)]
-pub struct MessagesHome(Stack, Page, #[skip] Option<Id>, #[skip] Vec<(Id, Vec<OrangeName>, Vec<Message>)>);
+pub type AccountActions = Arc<Mutex<Vec<(&'static str, Box<dyn FnMut(&mut Context) -> Box<dyn AppPage>>)>>>;
+
+#[derive(Component)]
+pub struct MessagesHome(Stack, Page, #[skip] Option<Id>, #[skip] Vec<(Id, Vec<OrangeName>, Vec<Message>)>, #[skip] AccountActions);
 
 impl AppPage for MessagesHome {
     fn has_nav(&self) -> bool { true }
     fn navigate(self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
-            0 => Ok(Box::new(SelectRecipients::new(ctx))),
-            1 => Ok(Box::new(GroupMessage::new(ctx, self.2.unwrap()))),
-            2 => Ok(Box::new(DirectMessage::new(ctx, self.2.clone().unwrap(), self))),
+            0 => Ok(Box::new(SelectRecipients::new(ctx, self.4))),
+            1 => Ok(Box::new(GroupMessage::new(ctx, self.2.unwrap(), self.4))),
+            2 => Ok(Box::new(DirectMessage::new(ctx, self.2.clone().unwrap(), self.4, None))),
             _ => Err(self),
         }
     }
 }
 
+impl std::fmt::Debug for MessagesHome {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MessagesHome")
+    }
+}
+
 impl MessagesHome {
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context, account_actions: AccountActions) -> Self {
         let header = Header::home(ctx, "Messages");
         let new_message = Button::primary(ctx, "New Message", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
@@ -58,7 +67,7 @@ impl MessagesHome {
             true => Content::new(Offset::Center, vec![Box::new(instructions)])
         };
 
-        MessagesHome(Stack::center(), Page::new(Some(header), content, Some(bumper)), None, rooms.clone())
+        MessagesHome(Stack::center(), Page::new(Some(header), content, Some(bumper)), None, rooms.clone(), account_actions)
     }
 }
 
@@ -84,26 +93,29 @@ impl OnEvent for MessagesHome {
     }
 }
 
-#[derive(Debug, Component)]
-pub struct SelectRecipients(Stack, Page, #[skip] ButtonState, #[skip] Option<Id>);
+#[derive(Component)]
+pub struct SelectRecipients(Stack, Page, #[skip] ButtonState, #[skip] Option<Id>, #[skip] AccountActions);
 
 impl AppPage for SelectRecipients {
     fn has_nav(&self) -> bool { true }
     fn navigate(self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
-            0 => Ok(Box::new(MessagesHome::new(ctx))),
-            1 => Ok(Box::new(GroupMessage::new(ctx, self.3.unwrap()))),
-            2 => {
-                let home = MessagesHome::new(ctx);
-                Ok(Box::new(DirectMessage::new(ctx, self.3.unwrap(), Box::new(home))))
-            },
+            0 => Ok(Box::new(MessagesHome::new(ctx, self.4))),
+            1 => Ok(Box::new(GroupMessage::new(ctx, self.3.unwrap(), self.4))),
+            2 => Ok(Box::new(DirectMessage::new(ctx, self.3.unwrap(), self.4, None))),
             _ => Err(self),
         }
     }
 }
 
+impl std::fmt::Debug for SelectRecipients {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SelectRecipients")
+    }
+}
+
 impl SelectRecipients {
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context, account_actions: AccountActions) -> Self {
         let icon_button = None::<(&'static str, fn(&mut Context, &mut String))>;
         let searchbar = TextInput::new(ctx, None, None, "Profile name...", None, icon_button);
 
@@ -130,7 +142,7 @@ impl SelectRecipients {
         let button = Button::disabled(ctx, "Continue", move |ctx: &mut Context| ctx.trigger_event(CreateMessageEvent));
 
         let bumper = Bumper::single_button(ctx, button);
-        SelectRecipients(Stack::center(), Page::new(Some(header), content, Some(bumper)), ButtonState::Default, None)
+        SelectRecipients(Stack::center(), Page::new(Some(header), content, Some(bumper)), ButtonState::Default, None, account_actions)
     }
 }
 
@@ -190,25 +202,28 @@ impl OnEvent for SelectRecipients {
     }
 }
 
-#[derive(Debug, Component)]
-pub struct DirectMessage(Stack, Page, #[skip] Id, #[skip] OrangeName, #[skip] Option<Box<dyn AppPage>>);
+#[derive(Component)]
+pub struct DirectMessage(Stack, Page, #[skip] Id, #[skip] OrangeName, #[skip] Option<Box<dyn AppPage>>, #[skip] AccountActions);
 
 impl AppPage for DirectMessage {
     fn has_nav(&self) -> bool { true }
     fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
-            0 => Ok(self.4.take().unwrap()),
-            1 =>  {
-                let home = DirectMessage::new(ctx, self.2, self.4.take().unwrap());
-                Ok(Box::new(UserAccount::new(ctx, self.3, Box::new(home))))
-            },
+            0 => Ok(self.4.take().unwrap_or(Box::new(MessagesHome::new(ctx, self.5)))),
+            1 => Ok(Box::new(UserAccount::new(ctx, self.3.clone(), self.5.clone(), self))),
             _ => Err(self),
         }
     }
 }
 
+impl std::fmt::Debug for DirectMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "DirectMessage")
+    }
+}
+
 impl DirectMessage {
-    pub fn new(ctx: &mut Context, room_id: Id, account_return: Box<dyn AppPage>) -> Self {
+    pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions, account_return: Option<Box<dyn AppPage>>) -> Self {
         let room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
         let me = ProfilePlugin::me(ctx).0;
         let orange_name = room.1.get(0).unwrap_or(&me).clone();
@@ -241,7 +256,7 @@ impl DirectMessage {
         let bumper = Bumper::new(ctx, vec![bumper]);
         let content = Content::new(offset, vec![content]);
         let header = HeaderMessages::new(ctx, Some(back), Some(info), vec![orange_name.clone()]);
-        DirectMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room_id, orange_name, Some(account_return))
+        DirectMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room_id, orange_name, account_return, account_actions)
     }
 }
 
@@ -266,22 +281,28 @@ impl OnEvent for DirectMessage {
     }
 }
 
-#[derive(Debug, Component)]
-pub struct GroupMessage(Stack, Page, #[skip] Id);
+#[derive(Component)]
+pub struct GroupMessage(Stack, Page, #[skip] Id, #[skip] AccountActions);
 
 impl AppPage for GroupMessage {
     fn has_nav(&self) -> bool { true }
     fn navigate(self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
-            0 => Ok(Box::new(MessagesHome::new(ctx))),
-            1 => Ok(Box::new(GroupInfo::new(ctx, self.2))),
+            0 => Ok(Box::new(MessagesHome::new(ctx, self.3))),
+            1 => Ok(Box::new(GroupInfo::new(ctx, self.2, self.3))),
             _ => Err(self),
         }
     }
 }
 
+impl std::fmt::Debug for GroupMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GroupMessage")
+    }
+}
+
 impl GroupMessage {
-    pub fn new(ctx: &mut Context, room_id: Id) -> Self {
+    pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions) -> Self {
         let room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
         let offset = if room.2.is_empty() {Offset::Center} else {Offset::End};
         let text_size = ctx.theme.fonts.size.md;
@@ -297,7 +318,7 @@ impl GroupMessage {
         let bumper = Bumper::new(ctx, vec![Box::new(input)]);
         let content = Content::new(offset, vec![content]);
         let header = HeaderMessages::new(ctx, Some(back), Some(info), room.1.clone());
-        GroupMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room_id)
+        GroupMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room_id, account_actions)
     }
 }
 
@@ -322,22 +343,28 @@ impl OnEvent for GroupMessage {
     }
 }
 
-#[derive(Debug, Component)]
-pub struct GroupInfo(Stack, Page, #[skip] Id, #[skip] Option<OrangeName>);
+#[derive(Component)]
+pub struct GroupInfo(Stack, Page, #[skip] Id, #[skip] Option<OrangeName>, #[skip] AccountActions);
 
 impl AppPage for GroupInfo {
     fn has_nav(&self) -> bool { true }
-    fn navigate(self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
+    fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
-            0 => Ok(Box::new(GroupMessage::new(ctx, self.2))),
-            1 => Ok(Box::new(UserAccount::new(ctx, self.3.as_ref().unwrap().clone(), self))),
+            0 => Ok(Box::new(GroupMessage::new(ctx, self.2, self.4))),
+            1 => Ok(Box::new(UserAccount::new(ctx, self.3.as_ref().unwrap().clone(), self.4.clone(), self))),
             _ => Err(self),
         }
     }
 }
 
+impl std::fmt::Debug for GroupInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GroupInfo")
+    }
+}
+
 impl GroupInfo {
-    pub fn new(ctx: &mut Context, room_id: Id) -> Self {
+    pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions) -> Self {
         let room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
         let contacts = room.1.iter().map(|orange_name| {
             let new_profile = orange_name.clone();
@@ -355,7 +382,7 @@ impl GroupInfo {
         let back = IconButton::navigation(ctx, "left", move |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let header = Header::stack(ctx, Some(back), "Group Message Info", None);
-        GroupInfo(Stack::center(), Page::new(Some(header), content, None), room_id, None)
+        GroupInfo(Stack::center(), Page::new(Some(header), content, None), room_id, None, account_actions)
     }
 }
 
