@@ -1,7 +1,6 @@
 use pelican_ui::events::Event;
 use pelican_ui::Context;
 use pelican_ui::air::{OrangeName, Id};
-use crate::Message;
 
 #[derive(Debug, Clone)]
 pub struct AddContactEvent(pub OrangeName);

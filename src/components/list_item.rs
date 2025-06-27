@@ -1,10 +1,11 @@
+#![allow(clippy::new_ret_no_self)]
+
 use pelican_ui::events::{OnEvent, Event};
 use pelican_ui::drawable::{Drawable, Component};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
 use profiles::plugin::ProfilePlugin;
-use profiles::service::Profiles;
-use pelican_ui::air::{OrangeName, Id};
+use pelican_ui::air::OrangeName;
 
 use profiles::components::AvatarContentProfiles;
 
@@ -21,9 +22,7 @@ use pelican_ui_std::{
 };
 
 use crate::events::{RemoveContactEvent, AddContactEvent, SetRoomEvent};
-use crate::FakeRooms;
-use crate::Message;
-use crate::service::Room;
+use crate::service::{Room, Message};
 
 pub struct ListItemGroupMessages;
 
@@ -32,11 +31,11 @@ impl ListItemGroupMessages {
         let items = rooms.into_iter().map(|room| {
             match room.1.len() > 1 {
                 true => ListItemMessages::group_message(ctx, room.1.clone(), move |ctx: &mut Context| {
-                    ctx.trigger_event(SetRoomEvent(room.0.clone()));
+                    ctx.trigger_event(SetRoomEvent(room.0));
                     ctx.trigger_event(NavigateEvent(1));
                 }),
                 false => ListItemMessages::direct_message(ctx, room.1.clone(), room.2.clone(), move |ctx: &mut Context| {
-                    ctx.trigger_event(SetRoomEvent(room.0.clone()));
+                    ctx.trigger_event(SetRoomEvent(room.0));
                     ctx.trigger_event(NavigateEvent(2));
                 })
             }
@@ -49,35 +48,30 @@ pub struct ListItemMessages;
 
 impl ListItemMessages {
     pub fn contact(ctx: &mut Context, orange_name: &OrangeName, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let profiles = ctx.state().get_or_default::<Profiles>().clone();
-        let profile = profiles.0.get(orange_name).unwrap();
-        let name = profile.get("username").unwrap();
+        let name = ProfilePlugin::username(ctx, orange_name);
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
-        ListItem::new(ctx, true, name, None, Some(orange_name.to_string().as_str()), None, None, None, None, Some(data), None, on_click)
+        ListItem::new(ctx, true, &name, None, Some(orange_name.to_string().as_str()), None, None, None, None, Some(data), None, on_click)
     }
 
     pub fn recipient(ctx: &mut Context, orange_name: &OrangeName) -> ListItem {
-        let profiles = ctx.state().get_or_default::<Profiles>().clone();
-        let profile = profiles.0.get(orange_name).unwrap();
-        let name = profile.get("username").unwrap();
+        let name = ProfilePlugin::username(ctx, orange_name);
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
         let contact = orange_name.clone();
         ListItem::new(
-            ctx, true, name, None, Some(contact.to_string().as_str()), None, None, None, None, Some(data), None, 
+            ctx, true, &name, None, Some(contact.to_string().as_str()), None, None, None, None, Some(data), None, 
             move |ctx: &mut Context| ctx.trigger_event(AddContactEvent(contact.clone()))
         )
     }
 
     pub fn direct_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let (prefix, name, orange_name) = match names.get(0) {
+        let (prefix, name, orange_name) = match names.first() {
             Some(o_n) => {
-                let user = ctx.state().get_or_default::<Profiles>().0.get(&o_n).unwrap();
-                let name = user.get("username").unwrap().to_string();
+                let name = ProfilePlugin::username(ctx, o_n);
                 (name.clone(), name, o_n.clone())
             }
             None => {
                 let me = ProfilePlugin::me(ctx).0;
-                ("You".to_string(), ProfilePlugin::get_username(ctx), me)
+                ("You".to_string(), ProfilePlugin::username(ctx, &me), me)
             }
         };
         
@@ -90,9 +84,7 @@ impl ListItemMessages {
         // let rooms = ctx.state().get::<FakeRooms>();
         // let room = rooms.0.get(room_id).unwrap();
         let names = names.iter().map(|orange_name| {
-            let profiles = ctx.state().get_or_default::<Profiles>().clone();
-            let profile = profiles.0.get(orange_name).unwrap();
-            profile.get("username").unwrap().to_string()
+            ProfilePlugin::username(ctx, orange_name)
         }).collect::<Vec<String>>();
         let names = names.join(", ");
         let avatar = AvatarContent::Icon("group", AvatarIconStyle::Secondary);
@@ -164,11 +156,9 @@ impl OnEvent for QuickDeselectButton {}
 
 impl QuickDeselectButton {
     fn new(ctx: &mut Context, orange_name: OrangeName) -> Self {
-        let profiles = ctx.state().get_or_default::<Profiles>().clone();
-        let profile = profiles.0.get(&orange_name).unwrap();
-        let name = profile.get("username").unwrap();
+        let name = ProfilePlugin::username(ctx, &orange_name);
         let contact_name = orange_name.clone();
-        let button = Button::secondary(ctx, None, name, Some("close"), move |ctx: &mut Context| {
+        let button = Button::secondary(ctx, None, &name, Some("close"), move |ctx: &mut Context| {
             ctx.trigger_event(RemoveContactEvent(contact_name.clone()))
         });
         QuickDeselectButton(Stack::default(), button, orange_name.clone())

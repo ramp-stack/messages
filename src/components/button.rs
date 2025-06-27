@@ -1,13 +1,13 @@
 use pelican_ui::Context;
-use pelican_ui_std::{IconButton, AppPage, IconButtonRow, NavigateEvent};
-
-use std::sync::{Arc, Mutex};
-
+use pelican_ui_std::AppPage;
 use profiles::pages::Account;
+
+type MessagesButton = (&'static str, Box<dyn FnMut(&mut Context) -> Box<dyn AppPage>>);
 
 pub struct IconButtonMessages;
 impl IconButtonMessages {
-    pub fn new(ctx: &mut Context) -> (&'static str, Box<dyn FnMut(&mut Context) -> Box<dyn AppPage>>) {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(_ctx: &mut Context) -> MessagesButton {
         let closure = Box::new(move |ctx: &mut Context| {
             // let mut rooms = ctx.state().get::<Rooms>();
             // for (id, room) in rooms.0.iter() {

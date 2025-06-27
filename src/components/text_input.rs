@@ -1,5 +1,4 @@
 use pelican_ui::Context;
-use profiles::plugin::Name;
 use pelican_ui::air::Id;
 use profiles::plugin::ProfilePlugin;
 use crate::plugin::MessagesPlugin;

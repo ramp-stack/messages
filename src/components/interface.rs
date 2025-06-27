@@ -2,7 +2,7 @@ use pelican_ui::Context;
 use pelican_ui::drawable::Align;
 use profiles::components::AvatarContentProfiles;
 use pelican_ui::air::OrangeName;
-use profiles::plugin::Profiles;
+use profiles::plugin::ProfilePlugin;
 
 use pelican_ui_std::{
     IconButton, Header,
@@ -27,9 +27,7 @@ impl HeaderContentMessages {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(ctx: &mut Context, profiles: Vec<OrangeName>) -> HeaderContent {
         let profiles = profiles.iter().map(|orange_name| { 
-            let profiles = ctx.state().get_or_default::<Profiles>().clone();
-            let profile = profiles.0.get(orange_name).unwrap();
-            let username = profile.get("username").unwrap();
+            let username = ProfilePlugin::username(ctx, orange_name);
             (username.to_string(), AvatarContentProfiles::from_orange_name(ctx, orange_name))
         }).collect::<Vec<_>>();
 

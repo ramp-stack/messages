@@ -5,12 +5,11 @@ use pelican_ui::{Context, Component};
 
 use profiles::plugin::ProfilePlugin;
 use profiles::components::AvatarContentProfiles;
-use profiles::service::{Profiles, Name};
 use pelican_ui::air::OrangeName;
 
 use chrono::Duration;
 
-use crate::Message;
+use crate::service::Message;
 use crate::components::AvatarMessages;
 
 use pelican_ui_std::{
@@ -49,9 +48,7 @@ impl TextMessage {
         timestamp: Timestamp
     ) -> Self {
         if author == ProfilePlugin::me(ctx).0 { style = MessageType::You; }
-        let profiles = ctx.state().get_or_default::<Profiles>().clone();
-        let profile = profiles.0.get(&author).unwrap();
-        let username = profile.get("username").unwrap();
+        let username = ProfilePlugin::username(ctx, &author);
         let avatar_content = AvatarContentProfiles::from_orange_name(ctx, &author);
 
         let (offset, avatar) = match style {
@@ -63,7 +60,7 @@ impl TextMessage {
         TextMessage (
             Row::new(8.0, offset, Size::Fit, Padding::default()),
             avatar.then(|| AvatarMessages::new(ctx, avatar_content)),
-            MessageContent::new(ctx, style, messages, username, timestamp)
+            MessageContent::new(ctx, style, messages, &username, timestamp)
         )
     }
 
