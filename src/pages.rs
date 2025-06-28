@@ -93,7 +93,7 @@ impl OnEvent for MessagesHome {
 pub struct SelectRecipients(Stack, Page, #[skip] ButtonState, #[skip] Option<Id>, #[skip] AccountActions, #[skip] Option<Uuid>);
 
 impl AppPage for SelectRecipients {
-    fn has_nav(&self) -> bool { true }
+    fn has_nav(&self) -> bool { false }
     fn navigate(self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
             0 => Ok(Box::new(MessagesHome::new(ctx, self.4))),
@@ -159,7 +159,6 @@ impl OnEvent for SelectRecipients {
                     Some((_, room)) => {
                         println!("Found room");
                         self.1.content().find::<QuickDeselect>().unwrap().get_orange_names().unwrap().iter().for_each(|on| {
-                            println!("Sharing with {:?}", on);
                             plugin.request(RoomsRequest::Share(room.0, on.clone()));
                         });
                         
@@ -223,7 +222,7 @@ impl OnEvent for SelectRecipients {
 pub struct DirectMessage(Stack, Page, #[skip] Id, #[skip] OrangeName, #[skip] Option<Box<dyn AppPage>>, #[skip] AccountActions);
 
 impl AppPage for DirectMessage {
-    fn has_nav(&self) -> bool { true }
+    fn has_nav(&self) -> bool { false }
     fn navigate(mut self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
             0 => Ok(self.4.take().unwrap_or(Box::new(MessagesHome::new(ctx, self.5)))),
@@ -243,7 +242,6 @@ impl DirectMessage {
     pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions, account_return: Option<Box<dyn AppPage>>) -> Self {
         let room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
         let me = ProfilePlugin::me(ctx).0;
-        println!("THIS Room {:?}", room);
         let orange_name = room.1.first().unwrap_or(&me).clone();
 
         let username = ProfilePlugin::username(ctx, &orange_name); //ctx.state().get_or_default::<Profiles>().0.get(&orange_name).unwrap().clone();
@@ -280,7 +278,6 @@ impl OnEvent for DirectMessage {
     fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
         if let Some(TickEvent) = event.downcast_ref::<TickEvent>() {
             let room = ctx.state().get_mut_or_default::<Rooms>().get(self.2).unwrap().clone();
-            println!("THIS Room {:?}", room);
             if !room.2.is_empty() {
                 if let Some(group) = &mut self.1.content().find::<TextMessageGroup>() {
                     if room.2.len() > group.count() {
@@ -302,7 +299,7 @@ impl OnEvent for DirectMessage {
 pub struct GroupMessage(Stack, Page, #[skip] Id, #[skip] AccountActions);
 
 impl AppPage for GroupMessage {
-    fn has_nav(&self) -> bool { true }
+    fn has_nav(&self) -> bool { false }
     fn navigate(self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
             0 => Ok(Box::new(MessagesHome::new(ctx, self.3))),
@@ -364,7 +361,7 @@ impl OnEvent for GroupMessage {
 pub struct GroupInfo(Stack, Page, #[skip] Id, #[skip] Option<OrangeName>, #[skip] AccountActions);
 
 impl AppPage for GroupInfo {
-    fn has_nav(&self) -> bool { true }
+    fn has_nav(&self) -> bool { false }
     fn navigate(self: Box<Self>, ctx: &mut Context, index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> { 
         match index {
             0 => Ok(Box::new(GroupMessage::new(ctx, self.2, self.4))),

@@ -10,6 +10,7 @@ use pelican_ui::State;
 use pelican_ui::air::{OrangeName, Id, Service as AirService, Protocol, Validation, ChildrenValidation, HeaderInfo, RecordPath, Permissions};
 use pelican_ui_std::Timestamp;
 
+use std::collections::HashSet;
 use serde::{Serialize, Deserialize};
 use chrono::{Local, Utc, DateTime};
 use uuid::Uuid;
@@ -91,7 +92,7 @@ impl Service for RoomsService {
     async fn run(&mut self, ctx: &mut ThreadContext<Self::Send, Self::Receive>) -> Result<Option<Duration>, runtime::Error> {
         let mut cache = RoomsCache::from_cache(&mut ctx.hardware.cache).await;
         while let Some((_, request)) = ctx.get_request() {
-            println!("Processing Request {:?}", request);
+            println!("Processing Request");
             match request {
                 RoomsRequest::CreateRoom(uuid) => {
                     println!("Try to create room");
@@ -101,12 +102,15 @@ impl Service for RoomsService {
                     println!("Room successfully created.");
                 },
                 RoomsRequest::CreateMessage(room, message) => {
+                    println!("Cache {:?}", cache.rooms);
+                    println!("This room {:?}", room);
                     let mut x = cache.rooms.get(&RecordPath::root().join(room)).unwrap().2;
                     while let (_, Some(_)) = AirService::create_private(ctx, RecordPath::root().join(room), MESSAGES_PROTOCOL.clone(), x, MESSAGES_PERMISSIONS, serde_json::to_vec(&message)?).await? {
                         x += 1;
                     }
                 },
                 RoomsRequest::Share(room, name) => {
+                    println!("Sharing with {:?}", name.to_string());
                     let path = RecordPath::root().join(room);
                     AirService::share(ctx, name, ROOMS_PERMISSIONS, path).await?
                 },
@@ -146,20 +150,22 @@ impl Service for RoomsSync {
 
     async fn run(&mut self, ctx: &mut ThreadContext<Self::Send, Self::Receive>) -> Result<Option<Duration>, runtime::Error> {
         let mut mutated = false;
-        println!("Running");
 
-        let result = AirService::receive(ctx, self.cache.datetime).await?;
-        println!("result {:?}", result);
-        for (n, p) in result.into_iter() {
-            while !AirService::create_pointer(ctx, RecordPath::root(), p.clone(), self.cache.rooms_idx).await.is_ok() {
+        println!("TIME {:?}", self.cache.datetime);
+        for (n, path) in AirService::receive(ctx, self.cache.datetime).await?.into_iter() {
+            println!("HELLO {:?}", path);
+            // let uuid: Uuid = serde_json::from_slice(&AirService::read_private(ctx, path.clone()).await?.unwrap().0.payload).unwrap();
+            // self.cache.rooms.entry(path).or_insert((uuid, vec![], 0));
+            // mutated = true;
+            while let (_, Some(_)) = AirService::create_pointer(ctx, RecordPath::root(), path.clone(), self.cache.rooms_idx).await? {
                 self.cache.rooms_idx += 1;
             }
+            mutated = true;
         }
-        println!("POINTERS RECEIVE DONE");
-        self.cache.datetime = chrono::Utc::now();
-        println!("Starting Discover");
+
+        // self.cache.datetime = chrono::Utc::now();
+
         while let (path, Some(_)) = AirService::discover(ctx, RecordPath::root(), self.cache.rooms_idx, vec![ROOMS_PROTOCOL.clone()]).await? {
-            println!("new room");
             if let Some(path) = path {
                 let uuid: Uuid = serde_json::from_slice(&AirService::read_private(ctx, path.clone()).await?.unwrap().0.payload).unwrap();
                 self.cache.rooms.entry(path).or_insert((uuid, vec![], 0));
@@ -167,7 +173,7 @@ impl Service for RoomsSync {
             }
             self.cache.rooms_idx += 1;
         }
-        println!("ROOMS ARE DONE");
+
         for (room, (_, messages, index)) in &mut self.cache.rooms {
             while let (path, Some(_)) = AirService::discover(ctx, room.clone(), *index, vec![MESSAGES_PROTOCOL.clone()]).await? {
                 if let Some(path) = path {
@@ -178,11 +184,11 @@ impl Service for RoomsSync {
                 *index += 1;
             }
         }
-        println!("MESSAGES ARE DONE");
+        
         if mutated || !self.init {
             self.init = true;
             ctx.callback(self.cache.rooms.iter().map(|(p, (u, m, _))| {
-                let authors = m.iter().map(|Message(_, _, a)| a.clone()).collect();
+                let authors: Vec<_> = m.iter().map(|Message(_, _, a)| a.clone()).collect::<HashSet<_>>().into_iter().collect();
                 (*u, (p.last(), authors, m.clone()))
             }).collect())
         }
@@ -195,7 +201,7 @@ impl Service for RoomsSync {
     }
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct RoomsCache {
     pub rooms_idx: u32,
     pub rooms: BTreeMap<RecordPath, (Uuid, Vec<Message>, u32)>,
@@ -218,4 +224,15 @@ impl RoomsCache {
     //         rooms: self.rooms.extend(other.)
     //     }
     // }
+}
+
+impl Default for RoomsCache {
+    fn default() -> Self {
+        println!("RoomsCache as default");
+        RoomsCache {
+            rooms_idx: 0,
+            rooms: BTreeMap::new(),
+            datetime: DateTime::UNIX_EPOCH,
+        }
+    }
 }
