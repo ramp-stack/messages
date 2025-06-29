@@ -1,14 +1,16 @@
-use pelican_ui::{Context, Plugin};
-use pelican_ui::runtime;
 use pelican_ui::air::Id;
+use pelican_ui::runtime;
+use pelican_ui::{Context, Plugin};
 // use serde_json::{Value, json};
 // use std::hash::{DefaultHasher, Hasher, Hash};
 
-use crate::service::{RoomsService, RoomsRequest, Message};
+use crate::service::{Message, RoomsRequest, RoomsService};
 
 pub struct MessagesPlugin(runtime::Context);
 impl Plugin for MessagesPlugin {
-    fn new(ctx: &mut Context) -> Self {MessagesPlugin(ctx.runtime.clone())}
+    fn new(ctx: &mut Context) -> Self {
+        MessagesPlugin(ctx.runtime.clone())
+    }
 }
 impl MessagesPlugin {
     pub fn request(&mut self, request: RoomsRequest) {

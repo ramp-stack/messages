@@ -1,6 +1,6 @@
 #![allow(clippy::new_ret_no_self)]
 
-use pelican_ui::events::{OnEvent, Event, MouseState, MouseEvent};
+use pelican_ui::events::{OnEvent, Event, MouseState, MouseEvent, TickEvent};
 use pelican_ui::drawable::{Drawable, Component};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
@@ -10,6 +10,7 @@ use pelican_ui::air::OrangeName;
 use profiles::components::AvatarContentProfiles;
 
 use pelican_ui_std::{
+    SearchEvent,
     Stack, Button,
     Padding, Offset,
     Size, Wrap,
@@ -58,15 +59,19 @@ impl ListItemMessages {
     pub fn contact(ctx: &mut Context, orange_name: &OrangeName, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
         let name = ProfilePlugin::username(ctx, orange_name);
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
-        ListItem::new(ctx, true, &name, None, Some(orange_name.to_string().as_str()), None, None, None, None, Some(data), None, on_click)
+        let orange = orange_name.to_string();
+        let orange = orange.strip_prefix("orange_name:").unwrap_or(orange.as_str());
+        ListItem::new(ctx, true, &name, None, Some(orange), None, None, None, None, Some(data), None, on_click)
     }
 
     pub fn recipient(ctx: &mut Context, orange_name: &OrangeName) -> ListItem {
         let name = ProfilePlugin::username(ctx, orange_name);
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
         let contact = orange_name.clone();
+        let orange = contact.to_string();
+        let orange = orange.strip_prefix("orange_name:").unwrap_or(orange.as_str());
         ListItem::new(
-            ctx, true, &name, None, Some(contact.to_string().as_str()), None, None, None, None, Some(data), None, 
+            ctx, true, &name, None, Some(orange), None, None, None, None, Some(data), None, 
             move |ctx: &mut Context| ctx.trigger_event(AddContactEvent(contact.clone()))
         )
     }
@@ -83,8 +88,6 @@ impl ListItemMessages {
     }
 
     pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        // let rooms = ctx.state().get::<FakeRooms>();
-        // let room = rooms.0.get(room_id).unwrap();
         let names = names.iter().map(|orange_name| {
             ProfilePlugin::username(ctx, orange_name)
         }).collect::<Vec<String>>();
@@ -107,7 +110,7 @@ impl QuickDeselect {
         QuickDeselect(
             Column::new(24.0, Offset::Start, Size::Fit, Padding::default()), 
             None, 
-            ListItemGroup::new(list_items)
+            ListItemGroup::new(list_items),
         )
     }
 
@@ -118,7 +121,24 @@ impl QuickDeselect {
 
 impl OnEvent for QuickDeselect {
     fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
-        if let Some(AddContactEvent(orange_name)) = event.downcast_ref::<AddContactEvent>() {
+        if let Some(SearchEvent(query)) = event.downcast_ref::<SearchEvent>() {
+            let query = query.to_lowercase();
+
+            let mut items_and_flags: Vec<_> = self.2.items().drain(..).map(|mut item| {
+                let name = item.inner().title().text().spans.first().map(|s| s.text.to_lowercase()).unwrap_or_default();
+                let orange = item.inner().subtitle().as_mut().and_then(|sb| sb.text().spans.first().map(|s| s.text.to_lowercase())).unwrap_or_default();
+
+                let priority = if query.is_empty() || name.contains(&query) {0} else if orange.contains(&query) {1} else {2};
+
+                ((priority, 0), item, priority == 2)
+            }).collect();
+
+            items_and_flags.sort_by_key(|(key, _, _)| *key);
+            let (items, flags): (Vec<_>, Vec<_>) = items_and_flags.into_iter().map(|(_, item, flag)| (item, flag)).unzip();
+
+            *self.2.items() = items;
+            flags.into_iter().enumerate().for_each(|(i, flag)| self.2.hide(flag, i));
+        } else if let Some(AddContactEvent(orange_name)) = event.downcast_ref::<AddContactEvent>() {
             let button = QuickDeselectButton::new(ctx, orange_name.clone());
             match &mut self.1 {
                 Some(select) => {

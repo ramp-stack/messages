@@ -17,7 +17,7 @@ use pelican_ui_std::{
     Header, IconButton, Text,
     ExpandableText, TextStyle, 
     Offset, ListItem, Content,
-    Button, ButtonState,
+    Button, ButtonState, Searchbar,
     Bumper, TextInput, Alert,
     NavigateEvent, ListItemGroup,
 };
@@ -113,7 +113,7 @@ impl std::fmt::Debug for SelectRecipients {
 impl SelectRecipients {
     pub fn new(ctx: &mut Context, account_actions: AccountActions) -> Self {
         let icon_button = None::<(&'static str, fn(&mut Context, &mut String))>;
-        let searchbar = TextInput::new(ctx, None, None, "Profile name...", None, icon_button);
+        let searchbar = Searchbar::new(TextInput::new(ctx, None, None, "Profile name...", None, icon_button));
 
         let me = ProfilePlugin::me(ctx).0;
         let profiles = ctx.state().get_or_default::<Profiles>().clone().0;
