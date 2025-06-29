@@ -80,8 +80,8 @@ impl MessageContent {
         time: Timestamp,
     ) -> Self {
         let name = match style {
-            MessageType::You => "You",
-            _ => name,
+            MessageType::You => None,
+            _ => Some(name),
         };
         let data = MessageData::new(ctx, style, name, time);
 
@@ -105,26 +105,28 @@ impl MessageContent {
 }
 
 #[derive(Debug, Component)]
-struct MessageData(Row, Text, Option<Text>, Text);
+struct MessageData(Row, Option<Text>, Option<Text>, Text);
 impl OnEvent for MessageData {}
 
 impl MessageData {
     fn new(
         ctx: &mut Context,
         style: MessageType,
-        name: &str,
+        name: Option<&str>,
         time: Timestamp,
     ) -> Self {
         let text_size = ctx.theme.fonts.size;
-        let (title_style, title_size, divider) = match style {
-            MessageType::Rooms => (TextStyle::Heading, text_size.h5, false),
-            _ => (TextStyle::Secondary, text_size.sm, true),
+        let (title, divider) = match style {
+            MessageType::Rooms => (Some((TextStyle::Heading, text_size.h5)), false),
+            MessageType::Contact => (None, true),
+            MessageType::Group => (Some((TextStyle::Secondary, text_size.sm)), true),
+            MessageType::You => (None, true)
         };
         MessageData(
             Row::new(4.0, Offset::End, Size::Fit, Padding::default()),
-            Text::new(ctx, name, title_style, title_size, Align::Left),
-            divider.then(|| Text::new(ctx, "·", TextStyle::Secondary, text_size.sm, Align::Left)),
-            Text::new(ctx, &time.friendly(), TextStyle::Secondary, text_size.sm, Align::Left),
+            title.map(|(style, size)| name.map(|n| Text::new(ctx, n, style, size, Align::Left))).flatten(),
+            divider.then(|| title.is_some().then(|| Text::new(ctx, "·", TextStyle::Secondary, text_size.sm, Align::Left))).flatten(),
+            Text::new(ctx, &time.direct(), TextStyle::Secondary, text_size.sm, Align::Left),
         )
     }
 }

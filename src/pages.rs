@@ -56,7 +56,7 @@ impl MessagesHome {
         let bumper = Bumper::single_button(ctx, new_message);
         let rooms = ctx.state().get_or_default::<Rooms>().rooms();
         let text_size = ctx.theme.fonts.size.md;
-        let instructions = ExpandableText::new(ctx, "No messages yet.\nGet started by messaging a friend.", TextStyle::Secondary, text_size, Align::Center);
+        let instructions = ExpandableText::new(ctx, "No messages yet.\nGet started by messaging a friend.", TextStyle::Secondary, text_size, Align::Center, None);
 
         let content = match rooms.is_empty() {
             false => Content::new(Offset::Start, vec![Box::new(ListItemGroupMessages::new(ctx, rooms.clone()))]),
@@ -242,7 +242,7 @@ impl DirectMessage {
     pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions, account_return: Option<Box<dyn AppPage>>) -> Self {
         let room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
         let me = ProfilePlugin::me(ctx).0;
-        let orange_name = room.1.first().unwrap_or(&me).clone();
+        let orange_name = room.1.into_iter().filter(|orange_name| *orange_name != me).collect::<Vec<_>>().first().unwrap_or(&me).clone();
 
         let username = ProfilePlugin::username(ctx, &orange_name); //ctx.state().get_or_default::<Profiles>().0.get(&orange_name).unwrap().clone();
         let is_blocked = ProfilePlugin::has_blocked(ctx, &me, &orange_name);
@@ -259,7 +259,7 @@ impl DirectMessage {
             true => {
                 let text_size = ctx.theme.fonts.size.md;
                 let text = format!("No messages yet.\nSend {} the first message.", username);
-                Box::new(ExpandableText::new(ctx, &text, TextStyle::Secondary, text_size, Align::Center)) as Box<dyn Drawable>
+                Box::new(ExpandableText::new(ctx, &text, TextStyle::Secondary, text_size, Align::Center, None)) as Box<dyn Drawable>
             },
             false => Box::new(TextMessageGroup::new(ctx, &room.2, MessageType::Contact)) as Box<dyn Drawable>
         };
@@ -321,7 +321,7 @@ impl GroupMessage {
         let offset = if room.2.is_empty() {Offset::Center} else {Offset::End};
         let text_size = ctx.theme.fonts.size.md;
         let content = match room.2.is_empty() {
-            true => Box::new(ExpandableText::new(ctx, "No messages yet.\nSend the first message.", TextStyle::Secondary, text_size, Align::Center)) as Box<dyn Drawable>,
+            true => Box::new(ExpandableText::new(ctx, "No messages yet.\nSend the first message.", TextStyle::Secondary, text_size, Align::Center, None)) as Box<dyn Drawable>,
             false => Box::new(TextMessageGroup::new(ctx, &room.2, MessageType::Group)) as Box<dyn Drawable>
         };
         let input = TextInputMessages::new(ctx, room.0);

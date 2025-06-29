@@ -1,6 +1,6 @@
 #![allow(clippy::new_ret_no_self)]
 
-use pelican_ui::events::{OnEvent, Event};
+use pelican_ui::events::{OnEvent, Event, MouseState, MouseEvent};
 use pelican_ui::drawable::{Drawable, Component};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
@@ -27,17 +27,25 @@ use crate::service::{Room, Message};
 pub struct ListItemGroupMessages;
 
 impl ListItemGroupMessages {
-    pub fn new(ctx: &mut Context, rooms: Vec<Room>) -> ListItemGroup {
-        let items = rooms.into_iter().map(|room| {
-            match room.1.len() > 1 {
+    pub fn new(ctx: &mut Context, mut rooms: Vec<Room>) -> ListItemGroup {
+        rooms.sort_by_key(|room| {
+            room.2.last().map(|msg| msg.timestamp().to_datetime())
+        });
+
+        let items = rooms.into_iter().rev().map(|room| {
+            match room.1.len() > 2 {
                 true => ListItemMessages::group_message(ctx, room.1.clone(), move |ctx: &mut Context| {
                     ctx.trigger_event(SetRoomEvent(room.0));
                     ctx.trigger_event(NavigateEvent(1));
                 }),
-                false => ListItemMessages::direct_message(ctx, room.1.clone(), room.2.clone(), move |ctx: &mut Context| {
-                    ctx.trigger_event(SetRoomEvent(room.0));
-                    ctx.trigger_event(NavigateEvent(2));
-                })
+                false => {
+                    let me = ProfilePlugin::me(ctx).0;
+                    let user = room.1.into_iter().filter(|orange_name| *orange_name != me).collect::<Vec<_>>().last().unwrap_or(&me).clone();
+                    ListItemMessages::direct_message(ctx, user, room.2.clone(), move |ctx: &mut Context| {
+                        ctx.trigger_event(SetRoomEvent(room.0));
+                        ctx.trigger_event(NavigateEvent(2));
+                    })
+                }
             }
         }).collect::<Vec<ListItem>>();
         ListItemGroup::new(items)
@@ -63,21 +71,15 @@ impl ListItemMessages {
         )
     }
 
-    pub fn direct_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let (prefix, name, orange_name) = match names.first() {
-            Some(o_n) => {
-                let name = ProfilePlugin::username(ctx, o_n);
-                (name.clone(), name, o_n.clone())
-            }
-            None => {
-                let me = ProfilePlugin::me(ctx).0;
-                ("You".to_string(), ProfilePlugin::username(ctx, &me), me)
-            }
-        };
-        
-        let data = AvatarContentProfiles::from_orange_name(ctx, &orange_name);
-        let recent = &messages.last().map(|m| format!("{}: {}", prefix, m.message().clone())).unwrap_or("No messages yet.".to_string());
-        ListItem::new(ctx, true, &name, None, Some(recent), None, None, None, None, Some(data), None, on_click)
+    pub fn direct_message(ctx: &mut Context, other: OrangeName, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
+        let me = ProfilePlugin::me(ctx).0;
+        let other_name = ProfilePlugin::username(ctx, &other);
+        let data = AvatarContentProfiles::from_orange_name(ctx, &other);
+        let recent = &messages.last().map(|m| {
+            let prefix = if *m.author() == me {"You".to_string()} else {other_name.clone()};
+            format!("{}: {}", prefix, m.message().clone())
+        }).unwrap_or("No messages yet.".to_string());
+        ListItem::new(ctx, true, &other_name, None, Some(recent), None, None, None, None, Some(data), None, on_click)
     }
 
     pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
@@ -152,15 +154,20 @@ impl QuickDeselectContent {
 
 #[derive(Debug, Component)]
 struct QuickDeselectButton(Stack, Button, #[skip] OrangeName);
-impl OnEvent for QuickDeselectButton {}
+
+impl OnEvent for QuickDeselectButton {
+    fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
+        if let Some(MouseEvent{state: MouseState::Released, position: Some(_)}) = event.downcast_ref::<MouseEvent>() {
+            ctx.trigger_event(RemoveContactEvent(self.2.clone()))
+        }
+        true
+    }
+}
 
 impl QuickDeselectButton {
     fn new(ctx: &mut Context, orange_name: OrangeName) -> Self {
         let name = ProfilePlugin::username(ctx, &orange_name);
-        let contact_name = orange_name.clone();
-        let button = Button::secondary(ctx, None, &name, Some("close"), move |ctx: &mut Context| {
-            ctx.trigger_event(RemoveContactEvent(contact_name.clone()))
-        });
+        let button = Button::secondary(ctx, None, &name, Some("close"), move |ctx: &mut Context| {});
         QuickDeselectButton(Stack::default(), button, orange_name.clone())
     }
 
