@@ -43,7 +43,7 @@ impl TextMessage {
     pub fn new(
         ctx: &mut Context,
         mut style: MessageType,
-        messages: Vec<String>,
+        mut messages: Vec<String>,
         author: OrangeName,
         timestamp: Timestamp
     ) -> Self {

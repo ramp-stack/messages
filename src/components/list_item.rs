@@ -76,10 +76,11 @@ impl ListItemMessages {
         )
     }
 
-    pub fn direct_message(ctx: &mut Context, other: OrangeName, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
+    pub fn direct_message(ctx: &mut Context, other: OrangeName, mut messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
         let me = ProfilePlugin::me(ctx).0;
         let other_name = ProfilePlugin::username(ctx, &other);
         let data = AvatarContentProfiles::from_orange_name(ctx, &other);
+        messages.retain(|m| *m.message() != "__system__joined".to_string());
         let recent = &messages.last().map(|m| {
             let prefix = if *m.author() == me {"You".to_string()} else {other_name.clone()};
             format!("{}: {}", prefix, m.message().clone())
