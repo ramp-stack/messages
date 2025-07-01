@@ -19,7 +19,8 @@ impl TextInputMessages {
                         ctx.trigger_event(ClearActiveInput);
                     }
                 }
-            ))
+            )),
+            true,
         )
     }
 }

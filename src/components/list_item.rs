@@ -29,9 +29,7 @@ pub struct ListItemGroupMessages;
 
 impl ListItemGroupMessages {
     pub fn new(ctx: &mut Context, mut rooms: Vec<Room>) -> ListItemGroup {
-        rooms.sort_by_key(|room| {
-            room.2.last().map(|msg| msg.timestamp().to_datetime())
-        });
+        rooms.sort_by_key(|room| room.2.last().map(|msg| msg.timestamp().clone()));
 
         let items = rooms.into_iter().rev().map(|room| {
             match room.1.len() > 2 {

@@ -16,18 +16,18 @@ use chrono::{Local, Utc, DateTime};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Message(String, Timestamp, OrangeName);
+pub struct Message(String, DateTime<Utc>, OrangeName);
 impl Message {
     pub fn from(message: String, author: OrangeName) -> Self {
-        Message(message, Timestamp::new(Local::now()), author)
+        Message(message, Utc::now(), author)
     }
 
     pub fn invisible(author: OrangeName) -> Self {
-        Message("__system__joined".to_string(), Timestamp::new(Local::now()), author)
+        Message("__system__joined".to_string(), Utc::now(), author)
     }
 
     pub fn author(&self) -> &OrangeName {&self.2}
-    pub fn timestamp(&self) -> &Timestamp {&self.1}
+    pub fn timestamp(&self) -> &DateTime<Utc> {&self.1}
     pub fn message(&self) -> &String {&self.0}
 }
 
@@ -188,9 +188,10 @@ impl Service for RoomsSync {
         for (room, (_, messages, index)) in &mut self.cache.rooms {
             while let (path, Some(_)) = AirService::discover(ctx, room.clone(), *index, vec![MESSAGES_PROTOCOL.clone()]).await? {
                 if let Some(path) = path {
-                    let message: Message = serde_json::from_slice(&AirService::read_private(ctx, path).await?.unwrap().0.payload).unwrap();
-                    messages.insert(*index as usize, message);
-                    mutated = true;
+                    if let Ok(message) = serde_json::from_slice(&AirService::read_private(ctx, path).await?.unwrap().0.payload) {
+                        messages.insert(*index as usize, message);
+                        mutated = true;
+                    }
                 }
                 *index += 1;
             }

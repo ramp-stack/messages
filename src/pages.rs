@@ -115,7 +115,7 @@ impl std::fmt::Debug for SelectRecipients {
 impl SelectRecipients {
     pub fn new(ctx: &mut Context, account_actions: AccountActions) -> Self {
         let icon_button = None::<(&'static str, fn(&mut Context, &mut String))>;
-        let searchbar = Searchbar::new(TextInput::new(ctx, None, None, "Profile name...", None, icon_button));
+        let searchbar = Searchbar::new(TextInput::new(ctx, None, None, "Profile name...", None, icon_button, false));
 
         let me = ProfilePlugin::me(ctx).0;
         let profiles = ctx.state().get_or_default::<Profiles>().clone().0;
