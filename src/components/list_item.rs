@@ -33,7 +33,7 @@ impl ListItemGroupMessages {
 
         let items = rooms.into_iter().rev().map(|room| {
             match room.1.len() > 2 {
-                true => ListItemMessages::group_message(ctx, room.1.clone(), move |ctx: &mut Context| {
+                true => ListItemMessages::group_message(ctx, room.1.clone(), room.2.clone(), move |ctx: &mut Context| {
                     ctx.trigger_event(SetRoomEvent(room.0));
                     ctx.trigger_event(NavigateEvent(1));
                 }),
@@ -79,20 +79,24 @@ impl ListItemMessages {
         let other_name = ProfilePlugin::username(ctx, &other);
         let data = AvatarContentProfiles::from_orange_name(ctx, &other);
         messages.retain(|m| *m.message() != "__system__joined".to_string());
-        let recent = &messages.last().map(|m| {
+        let (recent, read) = &messages.last().map(|m| {
             let prefix = if *m.author() == me {"You".to_string()} else {other_name.clone()};
-            format!("{}: {}", prefix, m.message().clone())
-        }).unwrap_or("No messages yet.".to_string());
-        ListItem::new(ctx, true, &other_name, None, Some(recent), None, None, None, None, Some(data), None, on_click)
+            (format!("{}: {}", prefix, m.message().clone()), m.is_read().clone())
+        }).unwrap_or(("No messages yet.".to_string(), true));
+        let color = ctx.theme.colors.brand.primary;
+        ListItem::new(ctx, true, &other_name, (!read).then(|| ("notification", color)), Some(recent), None, None, None, None, Some(data), None, on_click)
     }
 
-    pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let names = names.iter().map(|orange_name| {
-            ProfilePlugin::username(ctx, orange_name)
+    pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
+        let read = messages.last().map(|m| m.is_read().clone()).unwrap_or(true);
+        let me = ProfilePlugin::me(ctx).0;
+        let names = names.iter().filter(|orange| **orange != me).map(|orange_name| {
+            ProfilePlugin::username(ctx, orange_name).trim().to_string()
         }).collect::<Vec<String>>();
         let names = names.join(", ");
         let avatar = AvatarContent::Icon("group", AvatarIconStyle::Secondary);
-        ListItem::new(ctx, true, "Group Message", None, None, Some(&names), None, None, None, Some(avatar), None, on_click)
+        let color = ctx.theme.colors.brand.primary;
+        ListItem::new(ctx, true, "Group Message", (!read).then(|| ("notification", color)), None, Some(&names), None, None, None, Some(avatar), None, on_click)
     }
 
     // pub fn room(ctx: &mut Context, data: AvatarContent, name: &str, members: &str, description: &str, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
@@ -164,10 +168,7 @@ impl OnEvent for QuickDeselectContent {}
 
 impl QuickDeselectContent {
     fn new(first: QuickDeselectButton) -> Self {
-        QuickDeselectContent(
-            Wrap(8.0, 8.0, Offset::Start, Offset::Center, Padding::default()), 
-            vec![first],
-        )
+        QuickDeselectContent(Wrap::new(8.0, 8.0), vec![first])
     }
 }
 

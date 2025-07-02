@@ -16,19 +16,21 @@ use chrono::{Local, Utc, DateTime};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Message(String, DateTime<Utc>, OrangeName);
+pub struct Message(String, DateTime<Utc>, OrangeName, bool);
 impl Message {
     pub fn from(message: String, author: OrangeName) -> Self {
-        Message(message, Utc::now(), author)
+        Message(message, Utc::now(), author, false)
     }
 
     pub fn invisible(author: OrangeName) -> Self {
-        Message("__system__joined".to_string(), Utc::now(), author)
+        Message("__system__joined".to_string(), Utc::now(), author, true)
     }
 
     pub fn author(&self) -> &OrangeName {&self.2}
     pub fn timestamp(&self) -> &DateTime<Utc> {&self.1}
     pub fn message(&self) -> &String {&self.0}
+    pub fn is_read(&self) -> &bool {&self.3}
+    pub fn read(&mut self, status: bool) {self.3 = status}
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
@@ -202,7 +204,7 @@ impl Service for RoomsSync {
         if mutated || !self.init {
             self.init = true;
             ctx.callback(self.cache.rooms.iter().map(|(p, (u, m, _))| {
-                let authors: Vec<_> = m.iter().map(|Message(_, _, a)| a.clone()).collect::<HashSet<_>>().into_iter().collect();
+                let authors: Vec<_> = m.iter().map(|Message(_, _, a, _)| a.clone()).collect::<HashSet<_>>().into_iter().collect();
                 (*u, (p.last(), authors, m.clone()))
             }).collect());
             println!("Callback done.");

@@ -247,9 +247,12 @@ impl std::fmt::Debug for DirectMessage {
 
 impl DirectMessage {
     pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions, account_return: Option<Box<dyn AppPage>>) -> Self {
-        let mut room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
-        room.2.retain(|m| *m.message() != "__system__joined".to_string());
+        let mut room = ctx.state().get_mut_or_default::<Rooms>().get(room_id);
+        let room = room.as_mut().unwrap();
+        room.2.iter_mut().filter(|m| !m.is_read()).for_each(|m| {println!("SETTING TO READ"); m.read(true);});
+        let mut room = room.clone();
 
+        room.2.retain(|m| *m.message() != "__system__joined".to_string());
         let me = ProfilePlugin::me(ctx).0;
         let orange_name = room.1.into_iter().filter(|orange_name| *orange_name != me).collect::<Vec<_>>().first().unwrap_or(&me).clone();
 
@@ -284,7 +287,11 @@ impl DirectMessage {
 impl OnEvent for DirectMessage {
     fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
         if let Some(TickEvent) = event.downcast_ref::<TickEvent>() {
-            let mut room = ctx.state().get_mut_or_default::<Rooms>().get(self.2).unwrap().clone();
+            let mut room = ctx.state().get_mut_or_default::<Rooms>().get(self.2);
+            let room = room.as_mut().unwrap();
+            room.2.iter_mut().filter(|m| !m.is_read()).for_each(|m| {println!("SETTING TO READ"); m.read(true);});
+            let mut room = room.clone();
+
             room.2.retain(|m| *m.message() != "__system__joined".to_string());
             if !room.2.is_empty() {
                 if let Some(group) = &mut self.1.content().find::<TextMessageGroup>() {
@@ -400,7 +407,8 @@ impl std::fmt::Debug for GroupInfo {
 impl GroupInfo {
     pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions) -> Self {
         let room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
-        let contacts = room.1.iter().map(|orange_name| {
+        let me = ProfilePlugin::me(ctx).0;
+        let contacts = room.1.iter().filter(|orange| **orange != me).map(|orange_name| {
             let new_profile = orange_name.clone();
             ListItemMessages::contact(ctx, orange_name, move |ctx: &mut Context| {
                 ctx.trigger_event(OpenAccountEvent(new_profile.clone()));
