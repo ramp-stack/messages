@@ -15,7 +15,7 @@ use pelican_ui_std::{
     Padding, Offset,
     Size, Wrap,
     ListItemGroup,
-    Column,
+    Column, Flair,
     ListItem,
     AvatarContent,
     AvatarIconStyle,
@@ -120,6 +120,19 @@ impl QuickDeselect {
     pub fn get_orange_names(&self) -> Option<Vec<OrangeName>> {
         self.1.as_ref().map(|c| c.1.iter().map(|b| b.orange_name()).collect())
     }
+
+    fn select_item(&mut self, ctx: &mut Context, orange_name: &OrangeName, select: bool) {
+        self.2.items().iter_mut().filter_map(|l| {
+            let comp = l.inner().subtitle().as_mut().map(|sb| sb.text().spans[0].text.clone()).unwrap_or_default();
+            (Some(comp.as_str()) == orange_name.to_string().strip_prefix("orange_name:")).then(|| l.inner().title())
+        }).for_each(|title| {
+            // let new_flair = select.then(|| Flair::new(ctx, "checkmark", AvatarIconStyle::Success, avatar.as_mut().unwrap().size()));
+            // *avatar.as_mut().unwrap().flair() = new_flair;
+            let color = ctx.theme.colors.text.heading;
+            let flair = select.then(|| ("checkmark", color));
+            title.update_flair(ctx, flair);
+        });
+    }
 }
 
 impl OnEvent for QuickDeselect {
@@ -128,7 +141,7 @@ impl OnEvent for QuickDeselect {
             let query = query.to_lowercase();
 
             let mut items_and_flags: Vec<_> = self.2.items().drain(..).map(|mut item| {
-                let name = item.inner().title().text().spans.first().map(|s| s.text.to_lowercase()).unwrap_or_default();
+                let name = item.inner().title().title().text().spans.first().map(|s| s.text.to_lowercase()).unwrap_or_default();
                 let orange = item.inner().subtitle().as_mut().and_then(|sb| sb.text().spans.first().map(|s| s.text.to_lowercase())).unwrap_or_default();
 
                 let priority = if query.is_empty() || name.contains(&query) {0} else if orange.contains(&query) {1} else {2};
@@ -142,6 +155,8 @@ impl OnEvent for QuickDeselect {
             *self.2.items() = items;
             flags.into_iter().enumerate().for_each(|(i, flag)| self.2.hide(flag, i));
         } else if let Some(AddContactEvent(orange_name)) = event.downcast_ref::<AddContactEvent>() {
+            self.select_item(ctx, orange_name, true);
+
             let button = QuickDeselectButton::new(ctx, orange_name.clone());
             match &mut self.1 {
                 Some(select) => {
@@ -150,6 +165,8 @@ impl OnEvent for QuickDeselect {
                 None => self.1 = Some(QuickDeselectContent::new(button)),
             }
         } else if let Some(RemoveContactEvent(orange_name)) = event.downcast_ref::<RemoveContactEvent>() {
+            self.select_item(ctx, orange_name, false);
+
             if let Some(select) = &mut self.1 {
                 if select.1.len() == 1 {
                     self.1 = None;
