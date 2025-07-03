@@ -1,6 +1,6 @@
 #![allow(clippy::new_ret_no_self)]
 
-use pelican_ui::events::{OnEvent, Event, MouseState, MouseEvent, TickEvent};
+use pelican_ui::events::{OnEvent, Event, MouseState, MouseEvent};
 use pelican_ui::drawable::{Drawable, Component};
 use pelican_ui::layout::{Area, SizeRequest, Layout};
 use pelican_ui::{Context, Component};
@@ -15,8 +15,7 @@ use pelican_ui_std::{
     Padding, Offset,
     Size, Wrap,
     ListItemGroup,
-    Column, Flair,
-    ListItem,
+    Column, ListItem,
     AvatarContent,
     AvatarIconStyle,
     NavigateEvent,
@@ -29,7 +28,7 @@ pub struct ListItemGroupMessages;
 
 impl ListItemGroupMessages {
     pub fn new(ctx: &mut Context, mut rooms: Vec<Room>) -> ListItemGroup {
-        rooms.sort_by_key(|room| room.2.last().map(|msg| msg.timestamp().clone()));
+        rooms.sort_by_key(|room| room.2.last().map(|msg| *msg.timestamp()));
 
         let items = rooms.into_iter().rev().map(|room| {
             match room.1.len() > 2 {
@@ -78,17 +77,17 @@ impl ListItemMessages {
         let me = ProfilePlugin::me(ctx).0;
         let other_name = ProfilePlugin::username(ctx, &other);
         let data = AvatarContentProfiles::from_orange_name(ctx, &other);
-        messages.retain(|m| *m.message() != "__system__joined".to_string());
+        messages.retain(|m| *m.message() != "__system__joined");
         let (recent, read) = &messages.last().map(|m| {
             let prefix = if *m.author() == me {"You".to_string()} else {other_name.clone()};
-            (format!("{}: {}", prefix, m.message().clone()), m.is_read().clone())
+            (format!("{}: {}", prefix, m.message().clone()), *m.is_read())
         }).unwrap_or(("No messages yet.".to_string(), true));
         let color = ctx.theme.colors.brand.primary;
-        ListItem::new(ctx, true, &other_name, (!read).then(|| ("notification", color)), Some(recent), None, None, None, None, Some(data), None, on_click)
+        ListItem::new(ctx, true, &other_name, (!read).then_some(("notification", color)), Some(recent), None, None, None, None, Some(data), None, on_click)
     }
 
     pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
-        let read = messages.last().map(|m| m.is_read().clone()).unwrap_or(true);
+        let read = messages.last().map(|m| *m.is_read()).unwrap_or(true);
         let me = ProfilePlugin::me(ctx).0;
         let names = names.iter().filter(|orange| **orange != me).map(|orange_name| {
             ProfilePlugin::username(ctx, orange_name).trim().to_string()
@@ -96,7 +95,7 @@ impl ListItemMessages {
         let names = names.join(", ");
         let avatar = AvatarContent::Icon("group", AvatarIconStyle::Secondary);
         let color = ctx.theme.colors.brand.primary;
-        ListItem::new(ctx, true, "Group Message", (!read).then(|| ("notification", color)), None, Some(&names), None, None, None, Some(avatar), None, on_click)
+        ListItem::new(ctx, true, "Group Message", (!read).then_some(("notification", color)), None, Some(&names), None, None, None, Some(avatar), None, on_click)
     }
 
     // pub fn room(ctx: &mut Context, data: AvatarContent, name: &str, members: &str, description: &str, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
@@ -129,7 +128,7 @@ impl QuickDeselect {
             // let new_flair = select.then(|| Flair::new(ctx, "checkmark", AvatarIconStyle::Success, avatar.as_mut().unwrap().size()));
             // *avatar.as_mut().unwrap().flair() = new_flair;
             let color = ctx.theme.colors.text.heading;
-            let flair = select.then(|| ("checkmark", color));
+            let flair = select.then_some(("checkmark", color));
             title.update_flair(ctx, flair);
         });
     }
@@ -204,7 +203,7 @@ impl OnEvent for QuickDeselectButton {
 impl QuickDeselectButton {
     fn new(ctx: &mut Context, orange_name: OrangeName) -> Self {
         let name = ProfilePlugin::username(ctx, &orange_name);
-        let button = Button::secondary(ctx, None, &name, Some("close"), move |ctx: &mut Context| {});
+        let button = Button::secondary(ctx, None, &name, Some("close"), move |_ctx: &mut Context| {});
         QuickDeselectButton(Stack::default(), button, orange_name.clone())
     }
 

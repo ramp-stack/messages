@@ -3,16 +3,14 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 use maverick_os::Cache;
-use profiles::plugin::ProfilePlugin;
 use pelican_ui::runtime::{Services, Service, ServiceList, ThreadContext, async_trait, self};
 use pelican_ui::hardware;
 use pelican_ui::State;
 use pelican_ui::air::{OrangeName, Id, Service as AirService, Protocol, Validation, ChildrenValidation, HeaderInfo, RecordPath, Permissions};
-use pelican_ui_std::Timestamp;
 
 use std::collections::HashSet;
 use serde::{Serialize, Deserialize};
-use chrono::{Local, Utc, DateTime};
+use chrono::{Utc, DateTime};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -157,7 +155,7 @@ impl Service for RoomsSync {
         let mut mutated = false;
         println!("running {:?}", self.cache.rooms_idx);
 
-        for (n, path) in AirService::receive(ctx, self.cache.datetime).await?.into_iter() {
+        for (_, path) in AirService::receive(ctx, self.cache.datetime).await?.into_iter() {
             // let uuid: Uuid = serde_json::from_slice(&AirService::read_private(ctx, path.clone()).await?.unwrap().0.payload).unwrap();
             // self.cache.rooms.entry(path).or_insert((uuid, vec![], 0));
             // mutated = true;
@@ -178,10 +176,11 @@ impl Service for RoomsSync {
         while let (path, Some(_)) = AirService::discover(ctx, RecordPath::root(), self.cache.rooms_idx, vec![ROOMS_PROTOCOL.clone()]).await? {
             println!("Discovering...");
             if let Some(path) = path {
-                let uuid: Uuid = serde_json::from_slice(&AirService::read_private(ctx, path.clone()).await?.unwrap().0.payload).unwrap();
-                println!("Uuid: {:?}...", uuid);
-                self.cache.rooms.entry(path).or_insert((uuid, vec![], 0));
-                mutated = true;
+                if let Ok(uuid) = serde_json::from_slice(&AirService::read_private(ctx, path.clone()).await?.unwrap().0.payload) {
+                    println!("Uuid: {:?}...", uuid);
+                    self.cache.rooms.entry(path).or_insert((uuid, vec![], 0));
+                    mutated = true;
+                } else {println!("_--- ROOM HAD NO UUID ---_");}
             }
             self.cache.rooms_idx += 1;
         }

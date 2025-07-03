@@ -5,8 +5,7 @@ use pelican_ui::air::OrangeName;
 use profiles::plugin::ProfilePlugin;
 
 use pelican_ui_std::{
-    IconButton, Header,
-    AvatarContent, AvatarRow, 
+    IconButton, Header, AvatarRow, 
     Text, TextStyle, NavigateEvent,
     HeaderContent, HeaderIcon,
 };

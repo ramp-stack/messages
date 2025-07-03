@@ -43,7 +43,7 @@ impl TextMessage {
     pub fn new(
         ctx: &mut Context,
         mut style: MessageType,
-        mut messages: Vec<String>,
+        messages: Vec<String>,
         author: OrangeName,
         timestamp: Timestamp
     ) -> Self {
@@ -124,7 +124,7 @@ impl MessageData {
         };
         MessageData(
             Row::new(4.0, Offset::End, Size::Fit, Padding::default()),
-            title.map(|(style, size)| name.map(|n| Text::new(ctx, n, style, size, Align::Left))).flatten(),
+            title.and_then(|(style, size)| name.map(|n| Text::new(ctx, n, style, size, Align::Left))),
             divider.then(|| title.is_some().then(|| Text::new(ctx, "·", TextStyle::Secondary, text_size.sm, Align::Left))).flatten(),
             Text::new(ctx, &time.direct(), TextStyle::Secondary, text_size.sm, Align::Left),
         )

@@ -5,7 +5,6 @@ use pelican_ui::{Context, Component};
 use profiles::service::Profiles;
 use profiles::pages::{UserAccount, AccountActions};
 use profiles::plugin::ProfilePlugin;
-use profiles::components::AvatarContentProfiles;
 use pelican_ui::air::{OrangeName, Id};
 
 use crate::components::{QuickDeselect, MessageType, ListItemMessages, ListItemGroupMessages, TextMessageGroup, TextInputMessages, HeaderMessages};
@@ -21,7 +20,6 @@ use pelican_ui_std::{
     Button, ButtonState, Searchbar,
     Bumper, TextInput, Alert,
     NavigateEvent, ListItemGroup,
-    AvatarContent
 };
 
 use uuid::Uuid;
@@ -158,22 +156,17 @@ impl OnEvent for SelectRecipients {
                 let mut guard = ctx.get::<MessagesPlugin>();
                 let (plugin, ctx) = guard.get();
                 let me = ProfilePlugin::me(ctx).0;
-                match ctx.state().get::<Rooms>().expect("no rooms in state").0.iter().find(|(u, _)| *u == uuid) {
-                    Some((_, room)) => {
-                        // println!("Found room");
-
-                        self.1.content().find::<QuickDeselect>().unwrap().get_orange_names().unwrap().iter().for_each(|on| {
-                            plugin.request(RoomsRequest::Share(room.0, on.clone()));
-                        });
+                if let Some((_, room)) = ctx.state().get::<Rooms>().expect("no rooms in state").0.iter().find(|(u, _)| *u == uuid) {
+                    self.1.content().find::<QuickDeselect>().unwrap().get_orange_names().unwrap().iter().for_each(|on| {
+                        plugin.request(RoomsRequest::Share(room.0, on.clone()));
+                    });
 
 
-                        let message = Message::invisible(me);
-                        plugin.request(RoomsRequest::CreateMessage(room.0, message));
-                        self.3 = Some(room.0);
-                        let nav = if room.1.len() > 1 {1} else {2};
-                        ctx.trigger_event(NavigateEvent(nav));
-                    },
-                    None => {} //println!("Could not find room")
+                    let message = Message::invisible(me);
+                    plugin.request(RoomsRequest::CreateMessage(room.0, message));
+                    self.3 = Some(room.0);
+                    let nav = if room.1.len() > 1 {1} else {2};
+                    ctx.trigger_event(NavigateEvent(nav));
                 }
             }
         } else if let Some(CreateMessageEvent) = event.downcast_ref::<CreateMessageEvent>() {
@@ -252,7 +245,7 @@ impl DirectMessage {
         room.2.iter_mut().filter(|m| !m.is_read()).for_each(|m| {println!("SETTING TO READ"); m.read(true);});
         let mut room = room.clone();
 
-        room.2.retain(|m| *m.message() != "__system__joined".to_string());
+        room.2.retain(|m| *m.message() != "__system__joined");
         let me = ProfilePlugin::me(ctx).0;
         let orange_name = room.1.into_iter().filter(|orange_name| *orange_name != me).collect::<Vec<_>>().first().unwrap_or(&me).clone();
 
@@ -292,7 +285,7 @@ impl OnEvent for DirectMessage {
             room.2.iter_mut().filter(|m| !m.is_read()).for_each(|m| {println!("SETTING TO READ"); m.read(true);});
             let mut room = room.clone();
 
-            room.2.retain(|m| *m.message() != "__system__joined".to_string());
+            room.2.retain(|m| *m.message() != "__system__joined");
             if !room.2.is_empty() {
                 if let Some(group) = &mut self.1.content().find::<TextMessageGroup>() {
                     if room.2.len() > group.count() {
@@ -313,7 +306,7 @@ impl OnEvent for DirectMessage {
                     self.6 = false;
                     *self.1.header() = Some(HeaderMessages::new(ctx, vec![orange_name.clone()]));
                     if let Some(t) = self.1.content().find::<ExpandableText>() {
-                        let text = format!("No messages yet.\nSend {} the first message.", ProfilePlugin::username(ctx, &orange_name));
+                        let text = format!("No messages yet.\nSend {} the first message.", ProfilePlugin::username(ctx, orange_name));
                         t.text().spans[0].text = text;
                     }
                 }
@@ -346,7 +339,7 @@ impl std::fmt::Debug for GroupMessage {
 impl GroupMessage {
     pub fn new(ctx: &mut Context, room_id: Id, account_actions: AccountActions) -> Self {
         let mut room = ctx.state().get_mut_or_default::<Rooms>().get(room_id).unwrap().clone();
-        room.2.retain(|m| *m.message() != "__system__joined".to_string());
+        room.2.retain(|m| *m.message() != "__system__joined");
         let offset = if room.2.is_empty() {Offset::Center} else {Offset::End};
         let text_size = ctx.theme.fonts.size.md;
         let content = match room.2.is_empty() {
@@ -366,7 +359,7 @@ impl OnEvent for GroupMessage {
     fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
         if let Some(TickEvent) = event.downcast_ref::<TickEvent>() {
             let mut room = ctx.state().get_mut_or_default::<Rooms>().get(self.2).unwrap().clone();
-            room.2.retain(|m| *m.message() != "__system__joined".to_string());
+            room.2.retain(|m| *m.message() != "__system__joined");
             if !room.2.is_empty() {
                 if let Some(group) = &mut self.1.content().find::<TextMessageGroup>() {
                     if room.2.len() > group.count() {
