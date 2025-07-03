@@ -10,7 +10,8 @@ use pelican_ui::air::OrangeName;
 use profiles::components::AvatarContentProfiles;
 
 use pelican_ui_std::{
-    SearchEvent,
+    AdjustScrollEvent,
+    SearchEvent, ButtonSize,
     Stack, Button,
     Padding, Offset,
     Size, Wrap,
@@ -105,7 +106,7 @@ impl ListItemMessages {
 
 
 #[derive(Debug, Component)]
-pub struct QuickDeselect(Column, Option<QuickDeselectContent>, ListItemGroup);
+pub struct QuickDeselect(Column, Option<QuickDeselectContent>, ListItemGroup, #[skip] f32);
 
 impl QuickDeselect {
     pub fn new(list_items: Vec<ListItem>) -> Self {
@@ -113,6 +114,7 @@ impl QuickDeselect {
             Column::new(24.0, Offset::Start, Size::Fit, Padding::default()), 
             None, 
             ListItemGroup::new(list_items),
+            0.0
         )
     }
 
@@ -159,18 +161,36 @@ impl OnEvent for QuickDeselect {
             let button = QuickDeselectButton::new(ctx, orange_name.clone());
             match &mut self.1 {
                 Some(select) => {
-                    if !select.1.iter().any(|selected| selected.orange_name() == *orange_name) {select.1.push(button)}
+                    if !select.1.iter().any(|selected| selected.orange_name() == *orange_name) {
+                        select.1.push(button);
+                        let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
+                        ctx.trigger_event(AdjustScrollEvent(adj - self.3));
+                        self.3 = adj;
+                    } else {
+                        ctx.trigger_event(RemoveContactEvent(orange_name.clone()));
+                    }
                 },
-                None => self.1 = Some(QuickDeselectContent::new(button)),
+                None => {
+                    self.1 = Some(QuickDeselectContent::new(button));
+                    let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
+                    ctx.trigger_event(AdjustScrollEvent((adj - self.3) + 24.0));
+                    self.3 = adj;
+                }
             }
         } else if let Some(RemoveContactEvent(orange_name)) = event.downcast_ref::<RemoveContactEvent>() {
             self.select_item(ctx, orange_name, false);
 
             if let Some(select) = &mut self.1 {
                 if select.1.len() == 1 {
+                    let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
                     self.1 = None;
+                    ctx.trigger_event(AdjustScrollEvent(-(adj+24.0)));
+                    self.3 = 0.0;
                 } else {
                     select.1.retain(|button| button.orange_name() != *orange_name);
+                    let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
+                    ctx.trigger_event(AdjustScrollEvent(adj - self.3));
+                    self.3 = adj;
                 }
             }
         }
