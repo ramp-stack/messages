@@ -11,7 +11,7 @@ use profiles::components::AvatarContentProfiles;
 
 use pelican_ui_std::{
     AdjustScrollEvent,
-    SearchEvent, ButtonSize,
+    SearchEvent,
     Stack, Button,
     Padding, Offset,
     Size, Wrap,
@@ -223,7 +223,7 @@ impl OnEvent for QuickDeselectButton {
 impl QuickDeselectButton {
     fn new(ctx: &mut Context, orange_name: OrangeName) -> Self {
         let name = ProfilePlugin::username(ctx, &orange_name);
-        let button = Button::secondary(ctx, None, &name, Some("close"), move |_ctx: &mut Context| {});
+        let button = Button::secondary(ctx, None, &name, Some("close"), move |_ctx: &mut Context| {}, None);
         QuickDeselectButton(Stack::default(), button, orange_name.clone())
     }
 
