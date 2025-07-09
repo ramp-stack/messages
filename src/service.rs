@@ -256,3 +256,35 @@ impl Default for RoomsCache {
         }
     }
 }
+
+// pub struct PublicRoom(String, String, AvatarContent, Vec<OrangeName>, Vec<Message>); // title, subtitle, members, messages
+// impl PublicRoom {
+//     pub fn new(t: &str, s: &str, p: Option<resources::Image>) -> Self {
+//         let avatar = AvatarContentMessages::rooms(p);
+//         PublicRoom(t.to_string(), s.to_string(), avatar, Vec::new(), Vec::new())
+//     }
+
+//     pub fn title(&mut self) -> &mut String {&mut self.0}
+//     pub fn subtitle(&mut self) -> &mut tring {&mut self.1}
+//     pub fn avatar(&mut self) -> &mut AvatarContent {&mut self.2}
+//     pub fn members(&self) -> &Vec<OrangeName> {&self.3}
+//     pub fn messages(&self) -> &Vec<Message> {&self.4}
+// }
+
+// pub struct PublicRooms(Vec<PublicRoom>);
+
+// impl PublicRooms {
+//     pub fn inner(&mut self) -> &mut Vec<PublicRoom> {
+//         &mut self.0
+//     }
+// }
+
+// impl Default for PublicRooms {
+//     fn default() -> Self {
+//         let rooms = vec![
+//             PublicRoom::new("the orange room", "a room for all things orange", None)
+//         ];
+
+//         PublicRooms(rooms)
+//     }
+// }
