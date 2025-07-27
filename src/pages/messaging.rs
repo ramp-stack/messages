@@ -50,7 +50,7 @@ impl std::fmt::Debug for MessagesHome {
 
 impl MessagesHome {
     pub fn new(ctx: &mut Context, account_actions: AccountActions) -> Self {
-        let header = Header::home(ctx, "Messages");
+        let header = Header::home(ctx, "Messages", None);
         let new_message = Button::primary(ctx, "Create Message", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let bumper = Bumper::single_button(ctx, new_message);
@@ -176,43 +176,6 @@ impl OnEvent for SelectRecipients {
             let uuid = uuid::Uuid::new_v4();
             plugin.request(RoomsRequest::CreateRoom(uuid));
             self.5 = Some(uuid);
-
-            // let orange_names = self.1.content().find::<QuickDeselect>().unwrap().get_orange_names().unwrap();
-            // let mut rooms = ctx.state().get::<FakeRooms>();
-
-            // for (id, room) in rooms.0.iter() {
-            //     match room.authors.len() {
-            //         1 if room.authors[0] == orange_names[0] => {
-            //             // Direct already exists
-            //             self.3 = Some(*id);
-            //             ctx.trigger_event(NavigateEvent(2));
-            //             return true;
-            //         }
-            //         _ => {
-            //             let a: HashSet<_> = orange_names.iter().cloned().collect();
-            //             let b: HashSet<_> = room.authors.iter().cloned().collect();
-
-            //             if a == b {
-            //                 // Group alerady exists
-            //                 self.3 = Some(*id);
-            //                 ctx.trigger_event(NavigateEvent(1));
-            //                 return true;
-            //             }
-            //         }
-            //     }
-            // }
-
-            // println!("create dm");
-            // let id = uuid::Uuid::new_v4();
-            // let trigger_event = match orange_names.len() > 1 { 
-            //     true => |ctx: &mut Context| ctx.trigger_event(NavigateEvent(1)),
-            //     false => |ctx: &mut Context| ctx.trigger_event(NavigateEvent(2))
-            // };
-
-            // self.3 = Some(id);
-            // rooms.add(FakeRoom::new(orange_names.clone()), id);
-            // ctx.state().set(&rooms);
-            // trigger_event(ctx);
         }
         true
     }

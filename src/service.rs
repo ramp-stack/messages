@@ -4,9 +4,11 @@ use std::time::Duration;
 
 use maverick_os::Cache;
 use pelican_ui::runtime::{Services, Service, ServiceList, ThreadContext, async_trait, self};
-use pelican_ui::hardware;
+use pelican_ui::{hardware, resources};
 use pelican_ui::State;
 use pelican_ui::air::{OrangeName, Id, Service as AirService, Protocol, Validation, ChildrenValidation, HeaderInfo, RecordPath, Permissions};
+use pelican_ui_std::AvatarContent;
+use crate::components::AvatarContentMessages;
 
 use std::collections::HashSet;
 use serde::{Serialize, Deserialize};
@@ -257,34 +259,54 @@ impl Default for RoomsCache {
     }
 }
 
-// pub struct PublicRoom(String, String, AvatarContent, Vec<OrangeName>, Vec<Message>); // title, subtitle, members, messages
-// impl PublicRoom {
-//     pub fn new(t: &str, s: &str, p: Option<resources::Image>) -> Self {
-//         let avatar = AvatarContentMessages::rooms(p);
-//         PublicRoom(t.to_string(), s.to_string(), avatar, Vec::new(), Vec::new())
-//     }
+#[derive(Debug, Clone)]
+pub struct PublicRoom(String, String, AvatarContent, Vec<OrangeName>, Vec<Message>); // title, subtitle, members, messages
+impl PublicRoom {
+    pub fn new(t: &str, s: &str, p: Option<resources::Image>) -> Self {
+        let avatar = AvatarContentMessages::room(p);
+        PublicRoom(t.to_string(), s.to_string(), avatar, Vec::new(), Vec::new())
+    }
 
-//     pub fn title(&mut self) -> &mut String {&mut self.0}
-//     pub fn subtitle(&mut self) -> &mut tring {&mut self.1}
-//     pub fn avatar(&mut self) -> &mut AvatarContent {&mut self.2}
-//     pub fn members(&self) -> &Vec<OrangeName> {&self.3}
-//     pub fn messages(&self) -> &Vec<Message> {&self.4}
-// }
+    pub fn title(&mut self) -> &mut String {&mut self.0}
+    pub fn subtitle(&mut self) -> &mut String {&mut self.1}
+    pub fn avatar(&mut self) -> &mut AvatarContent {&mut self.2}
+    pub fn members(&self) -> &Vec<OrangeName> {&self.3}
+    pub fn messages(&self) -> &Vec<Message> {&self.4}
+}
 
-// pub struct PublicRooms(Vec<PublicRoom>);
+pub struct PublicRooms(Vec<PublicRoom>);
 
-// impl PublicRooms {
-//     pub fn inner(&mut self) -> &mut Vec<PublicRoom> {
-//         &mut self.0
-//     }
-// }
+impl PublicRooms {
+    pub fn inner(self) -> Vec<PublicRoom> {
+        self.0
+    }
+}
 
-// impl Default for PublicRooms {
-//     fn default() -> Self {
-//         let rooms = vec![
-//             PublicRoom::new("the orange room", "a room for all things orange", None)
-//         ];
+impl Default for PublicRooms {
+    fn default() -> Self {
+        let rooms = vec![
+            PublicRoom::new("the orange room", "A bright and friendly space for anything orange — the color, the fruit, or just the vibe.", None),
+            PublicRoom::new("space talk", "From Mars missions to stargazing tips, this room is for anyone curious about the cosmos.", None),
+            PublicRoom::new("animal studies", "Whether you work with animals or just admire them, this is a place to share facts, photos, and stories.", None),
+            PublicRoom::new("bike shed", "Pull up, park your ride, and swap stories with other motorbike and cycling enthusiasts.", None),
+            PublicRoom::new("coffee break", "Take five and join others for relaxed conversation over a virtual cup of coffee.", None),
+            PublicRoom::new("kyoto alley", "A calm corner for those who love Japanese culture, from side streets to seasonal snacks.", None),
+            PublicRoom::new("the gaming desk", "Talk strategies, share screenshots, or just hang out while you queue your next match.", None),
+            PublicRoom::new("football chat", "Join fans around the world to talk match day, player stats, or classic moments.", None),
+            PublicRoom::new("art studio", "Share your work, get feedback, or just hang around people who love to make things.", None),
+            PublicRoom::new("book circle", "Whether you're deep into fiction or just picking up something new, this room's for readers.", None),
+            PublicRoom::new("the reptile room", "Dedicated to the cold-blooded — snakes, lizards, and the people who care for them.", None),
+            PublicRoom::new("film club", "A relaxed space for movie lovers to discuss what they're watching or rewatching.", None),
+            PublicRoom::new("hiking log", "Post trail photos, plan trips, or trade gear advice with fellow hikers and backpackers.", None),
+            PublicRoom::new("language exchange", "Practice with native speakers, ask questions, and connect across cultures.", None),
+            PublicRoom::new("photography zone", "A space for camera lovers to share tips, talk gear, and show their latest shots.", None),
+            PublicRoom::new("coding corner", "Whether you're just learning or shipping features, join in for code talk and project chat.", None),
+            PublicRoom::new("run tracker", "Log your runs, talk about shoes or routes, and stay motivated with others.", None),
+            PublicRoom::new("board game night", "Pull up a chair for talk about tabletop games — casual or competitive.", None),
+            PublicRoom::new("brazilian kitchen", "From feijoada to street food, share recipes and stories from Brazilian cooking.", None),
+            PublicRoom::new("the forge", "For metalworkers, tool collectors, and anyone who likes building things with their hands.", None),
+        ];
 
-//         PublicRooms(rooms)
-//     }
-// }
+        PublicRooms(rooms)
+    }
+}

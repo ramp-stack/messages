@@ -161,8 +161,8 @@ impl MessageBubble {
         message: &str,
         style: MessageType,
     ) -> Self {
-        let theme = &ctx.theme;
-        let (colors, text_size) = (theme.colors, theme.fonts.size.md);
+        let text_size = ctx.theme.fonts.size.md;
+        let colors = &ctx.theme.colors;
         let (bg_color, text_style) = match style {
             MessageType::You => (colors.brand.primary, TextStyle::White),
             MessageType::Rooms => (colors.background.primary, TextStyle::White),
