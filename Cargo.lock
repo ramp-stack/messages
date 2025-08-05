@@ -3337,6 +3337,7 @@ dependencies = [
  "dyn-clone",
  "fast_image_resize",
  "image 0.25.6",
+ "imageproc",
  "pelican_ui",
  "qrc",
  "qrcode 0.14.1",
@@ -3516,6 +3517,7 @@ name = "profiles"
 version = "0.1.1"
 dependencies = [
  "image 0.25.6",
+ "include_dir",
  "log",
  "pelican_ui",
  "pelican_ui_std",

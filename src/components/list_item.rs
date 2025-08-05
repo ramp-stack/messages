@@ -59,7 +59,7 @@ impl ListItemMessages {
         let data = AvatarContentProfiles::from_orange_name(ctx, orange_name);
         let orange = orange_name.to_string();
         let orange = orange.strip_prefix("orange_name:").unwrap_or(orange.as_str());
-        ListItem::new(ctx, true, &name, None, Some(orange), None, None, None, None, Some(data), None, on_click)
+        ListItem::new(ctx, true, &name, None, Some(orange), None, None, None, None, Some(data), None, true, on_click)
     }
 
     pub fn recipient(ctx: &mut Context, orange_name: &OrangeName) -> ListItem {
@@ -69,7 +69,7 @@ impl ListItemMessages {
         let orange = contact.to_string();
         let orange = orange.strip_prefix("orange_name:").unwrap_or(orange.as_str());
         ListItem::new(
-            ctx, true, &name, None, Some(orange), None, None, None, None, Some(data), None, 
+            ctx, true, &name, None, Some(orange), None, None, None, None, Some(data), None, true,
             move |ctx: &mut Context| ctx.trigger_event(AddContactEvent(contact.clone()))
         )
     }
@@ -84,7 +84,7 @@ impl ListItemMessages {
             (format!("{}: {}", prefix, m.message().clone()), *m.is_read())
         }).unwrap_or(("No messages yet.".to_string(), true));
         let color = ctx.theme.colors.brand.primary;
-        ListItem::new(ctx, true, &other_name, (!read).then_some(("notification", color)), Some(recent), None, None, None, None, Some(data), None, on_click)
+        ListItem::new(ctx, true, &other_name, (!read).then_some(("notification", color)), Some(recent), None, None, None, None, Some(data), None, true, on_click)
     }
 
     pub fn group_message(ctx: &mut Context, names: Vec<OrangeName>, messages: Vec<Message>, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
@@ -96,7 +96,7 @@ impl ListItemMessages {
         let names = names.join(", ");
         let avatar = AvatarContent::Icon("group", AvatarIconStyle::Secondary);
         let color = ctx.theme.colors.brand.primary;
-        ListItem::new(ctx, true, "Group Message", (!read).then_some(("notification", color)), None, Some(&names), None, None, None, Some(avatar), None, on_click)
+        ListItem::new(ctx, true, "Group Message", (!read).then_some(("notification", color)), None, Some(&names), None, None, None, Some(avatar), None, true, on_click)
     }
 
     // pub fn room(ctx: &mut Context, data: AvatarContent, name: &str, members: &str, description: &str, on_click: impl FnMut(&mut Context) + 'static) -> ListItem {
