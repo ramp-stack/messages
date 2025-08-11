@@ -3489,6 +3489,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "profiles"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2641551fbb3decda27c6d2590c7021a730e43a081f0bd2e4150c7344899036d2"
+dependencies = [
+ "image 0.25.6",
+ "log",
+ "pelican_ui",
+ "pelican_ui_std",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "profiling"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3622,6 +3637,7 @@ dependencies = [
  "maverick_os",
  "pelican_ui",
  "pelican_ui_std",
+ "profiles",
  "ramp-bitcoin",
  "serde",
  "serde_json",
