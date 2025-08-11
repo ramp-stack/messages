@@ -1,16 +1,19 @@
 [package]
-name = "messages"
-version = "0.1.1"
+name = "ramp-messages"
+version = "0.2.1"
 edition = "2024"
+authors = ["Ella Mae <ellaammae@email.com>"]
+description = "A Rust crate built on RAMP that provides all the tools to configure AIR messages."
+license = "BSD-3-Clause"
+repository = "https://github.com/ramp-stack/messages"
+documentation = "https://docs.rs/messages"
 
 [dependencies]
-pelican_ui = {path = "../pelican_ui" }
-pelican_ui_std = {path = "../pelican_ui_std" }
-bitcoin = {path = "../bitcoin" }
-profiles = {path = "../profiles" }
 serde = "1.0.219"
 serde_json = "1.0.140"
 uuid = { version = "1.17.0", features = ["v4", "serde", "js"] }
 chrono = { version = "0.4.40", features = ["serde"] }
-#maverick_os = "0.1.1"
-maverick_os = {path="../maverick_os"}
+maverick_os = "0.1.6"
+pelican_ui = "1.1.0"
+pelican_ui_std = "0.2.1"
+ramp-bitcoin = "0.1.2"
