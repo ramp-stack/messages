@@ -57,7 +57,7 @@ impl RoomsHome {
         let rooms = PublicRooms::default();
         let cards = Cards::new(ctx, rooms.inner().clone(), 1);
 
-        let content = Content::new(Offset::Start, vec![Box::new(cards) as Box<dyn Drawable>]);
+        let content = Content::new(ctx, Offset::Start, vec![Box::new(cards) as Box<dyn Drawable>]);
         RoomsHome(Stack::center(), Page::new(Some(header), content, Some(bumper)), None, account_actions)
     }
 }
@@ -127,7 +127,7 @@ impl SelectRoomsRecipients {
             false => Box::new(QuickDeselect::new(recipients)) as Box<dyn Drawable>
         };
 
-        let content = Content::new(Offset::Start, vec![Box::new(searchbar), content]);
+        let content = Content::new(ctx, Offset::Start, vec![Box::new(searchbar), content]);
         let back = IconButton::navigation(ctx, "left", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let header = Header::stack(ctx, Some(back), "Create message", None);
@@ -208,7 +208,7 @@ impl RoomsMessage {
         let input = TextInputMessages::new(ctx, room.0);
 
         let bumper = Bumper::new(ctx, vec![Box::new(input)]);
-        let content = Content::new(offset, vec![content]);
+        let content = Content::new(ctx, offset, vec![content]);
         let header = HeaderMessages::new(ctx, room.1.clone());
         RoomsMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room_id, account_actions)
     }

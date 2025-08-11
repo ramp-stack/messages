@@ -57,10 +57,10 @@ impl MessagesHome {
         let rooms = ctx.state().get_or_default::<Rooms>().rooms();
         let text_size = ctx.theme.fonts.size.md;
         let instructions = ExpandableText::new(ctx, "No messages yet.\nGet started by messaging a friend.", TextStyle::Secondary, text_size, Align::Center, None);
-
+        let group = ListItemGroupMessages::new(ctx, rooms.clone());
         let content = match rooms.is_empty() {
-            false => Content::new(Offset::Start, vec![Box::new(ListItemGroupMessages::new(ctx, rooms.clone()))]),
-            true => Content::new(Offset::Center, vec![Box::new(instructions)])
+            false => Content::new(ctx, Offset::Start, vec![Box::new(group)]),
+            true => Content::new(ctx, Offset::Center, vec![Box::new(instructions)])
         };
 
         MessagesHome(Stack::center(), Page::new(Some(header), content, Some(bumper)), None, rooms, account_actions)
@@ -132,7 +132,7 @@ impl SelectRecipients {
             false => Box::new(QuickDeselect::new(recipients)) as Box<dyn Drawable>
         };
 
-        let content = Content::new(Offset::Start, vec![Box::new(searchbar), content]);
+        let content = Content::new(ctx, Offset::Start, vec![Box::new(searchbar), content]);
         let back = IconButton::navigation(ctx, "left", |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 
         let header = Header::stack(ctx, Some(back), "Create message", None);
@@ -234,7 +234,7 @@ impl DirectMessage {
         };
 
         let bumper = Bumper::new(ctx, vec![bumper]);
-        let content = Content::new(offset, vec![content]);
+        let content = Content::new(ctx, offset, vec![content]);
         let header = HeaderMessages::new(ctx, vec![orange_name.clone()]);
         DirectMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room_id, orange_name, account_return, account_actions, true)
     }
@@ -312,7 +312,7 @@ impl GroupMessage {
         let input = TextInputMessages::new(ctx, room.0);
 
         let bumper = Bumper::new(ctx, vec![Box::new(input)]);
-        let content = Content::new(offset, vec![content]);
+        let content = Content::new(ctx, offset, vec![content]);
         let header = HeaderMessages::new(ctx, room.1.clone());
         GroupMessage(Stack::center(), Page::new(Some(header), content, Some(bumper)), room_id, account_actions)
     }
@@ -375,7 +375,7 @@ impl GroupInfo {
         let text_size = ctx.theme.fonts.size.md;
         let members = format!("This group has {} members.", contacts.len());
         let text = Text::new(ctx, &members, TextStyle::Secondary, text_size, Align::Center);
-        let content = Content::new(Offset::Start, vec![Box::new(text), Box::new(ListItemGroup::new(contacts))]);
+        let content = Content::new(ctx, Offset::Start, vec![Box::new(text), Box::new(ListItemGroup::new(contacts))]);
  
         let back = IconButton::navigation(ctx, "left", move |ctx: &mut Context| ctx.trigger_event(NavigateEvent(0)));
 

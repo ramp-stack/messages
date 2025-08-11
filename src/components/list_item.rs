@@ -164,7 +164,7 @@ impl OnEvent for QuickDeselect {
                     if !select.1.iter().any(|selected| selected.orange_name() == *orange_name) {
                         select.1.push(button);
                         let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
-                        ctx.trigger_event(AdjustScrollEvent(adj - self.3));
+                        ctx.trigger_event(AdjustScrollEvent::Vertical(adj - self.3));
                         self.3 = adj;
                     } else {
                         ctx.trigger_event(RemoveContactEvent(orange_name.clone()));
@@ -173,7 +173,7 @@ impl OnEvent for QuickDeselect {
                 None => {
                     self.1 = Some(QuickDeselectContent::new(button));
                     let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
-                    ctx.trigger_event(AdjustScrollEvent((adj - self.3) + 24.0));
+                    ctx.trigger_event(AdjustScrollEvent::Vertical((adj - self.3) + 24.0));
                     self.3 = adj;
                 }
             }
@@ -184,12 +184,12 @@ impl OnEvent for QuickDeselect {
                 if select.1.len() == 1 {
                     let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
                     self.1 = None;
-                    ctx.trigger_event(AdjustScrollEvent(-(adj+24.0)));
+                    ctx.trigger_event(AdjustScrollEvent::Vertical(-(adj+24.0)));
                     self.3 = 0.0;
                 } else {
                     select.1.retain(|button| button.orange_name() != *orange_name);
                     let adj = Drawable::request_size(self.1.as_ref().unwrap(), ctx).min_height();
-                    ctx.trigger_event(AdjustScrollEvent(adj - self.3));
+                    ctx.trigger_event(AdjustScrollEvent::Vertical(adj - self.3));
                     self.3 = adj;
                 }
             }

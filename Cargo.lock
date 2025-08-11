@@ -2267,6 +2267,7 @@ dependencies = [
  "env_logger",
  "hex",
  "image 0.25.6",
+ "imageproc",
  "jni",
  "libc",
  "log",
@@ -3517,7 +3518,6 @@ name = "profiles"
 version = "0.1.1"
 dependencies = [
  "image 0.25.6",
- "include_dir",
  "log",
  "pelican_ui",
  "pelican_ui_std",
@@ -5375,7 +5375,6 @@ dependencies = [
  "fontdue",
  "hex",
  "image 0.25.6",
- "rand 0.9.1",
  "wgpu",
  "wgpu_dyn_buffer",
 ]
