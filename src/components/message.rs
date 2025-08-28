@@ -126,7 +126,7 @@ impl MessageData {
             Row::new(4.0, Offset::End, Size::Fit, Padding::default()),
             title.and_then(|(style, size)| name.map(|n| Text::new(ctx, n, style, size, Align::Left))),
             divider.then(|| title.is_some().then(|| Text::new(ctx, "·", TextStyle::Secondary, text_size.sm, Align::Left))).flatten(),
-            Text::new(ctx, &time.direct(), TextStyle::Secondary, text_size.sm, Align::Left),
+            Text::new(ctx, &time.direct().unwrap(), TextStyle::Secondary, text_size.sm, Align::Left),
         )
     }
 }

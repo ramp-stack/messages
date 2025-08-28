@@ -123,7 +123,7 @@ impl QuickDeselect {
     }
 
     fn select_item(&mut self, ctx: &mut Context, orange_name: &OrangeName, select: bool) {
-        self.2.items().iter_mut().filter_map(|l| {
+        self.2.inner().iter_mut().filter_map(|l| {
             let comp = l.inner().subtitle().as_mut().map(|sb| sb.text().spans[0].text.clone()).unwrap_or_default();
             (Some(comp.as_str()) == orange_name.to_string().strip_prefix("orange_name:")).then(|| l.inner().title())
         }).for_each(|title| {
@@ -141,7 +141,7 @@ impl OnEvent for QuickDeselect {
         if let Some(SearchEvent(query)) = event.downcast_ref::<SearchEvent>() {
             let query = query.to_lowercase();
 
-            let mut items_and_flags: Vec<_> = self.2.items().drain(..).map(|mut item| {
+            let mut items_and_flags: Vec<_> = self.2.inner().drain(..).map(|mut item| {
                 let name = item.inner().title().title().text().spans.first().map(|s| s.text.to_lowercase()).unwrap_or_default();
                 let orange = item.inner().subtitle().as_mut().and_then(|sb| sb.text().spans.first().map(|s| s.text.to_lowercase())).unwrap_or_default();
 
@@ -153,7 +153,7 @@ impl OnEvent for QuickDeselect {
             items_and_flags.sort_by_key(|(key, _, _)| *key);
             let (items, flags): (Vec<_>, Vec<_>) = items_and_flags.into_iter().map(|(_, item, flag)| (item, flag)).unzip();
 
-            *self.2.items() = items;
+            *self.2.inner() = items;
             flags.into_iter().enumerate().for_each(|(i, flag)| self.2.hide(flag, i));
         } else if let Some(AddContactEvent(orange_name)) = event.downcast_ref::<AddContactEvent>() {
             self.select_item(ctx, orange_name, true);

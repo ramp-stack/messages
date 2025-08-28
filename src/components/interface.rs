@@ -3,9 +3,10 @@ use pelican_ui::drawable::Align;
 use profiles::components::AvatarContentProfiles;
 use pelican_ui::air::OrangeName;
 use profiles::plugin::ProfilePlugin;
+use crate::components::AvatarRow;
 
 use pelican_ui_std::{
-    IconButton, Header, AvatarRow, 
+    IconButton, Header, 
     Text, TextStyle, NavigateEvent,
     HeaderContent, HeaderIcon,
 };
@@ -34,7 +35,8 @@ impl HeaderContentMessages {
         let title = if profiles.len() == 1 { profiles[0].0.clone() } else { "Group Message".to_string() };
         let avatars = profiles.into_iter().map(|(_, a)| a).collect();
 
-        HeaderContent::new(Some(AvatarRow::new(ctx, avatars)),
+        HeaderContent::new(
+            Some(Box::new(AvatarRow::new(ctx, avatars))),
             Text::new(ctx, &title, TextStyle::Heading, ctx.theme.fonts.size.h5, Align::Left),
         )
     }

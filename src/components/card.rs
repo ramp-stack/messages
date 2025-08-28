@@ -82,7 +82,7 @@ impl CardContent {
             Text::new(ctx, subtitle, TextStyle::Primary, font_size.xs, Align::Left),
             Bin (
                 Stack(Offset::default(), Offset::default(), Size::Fit, Size::Static(1.0), Padding(0.0, 6.0, 0.0, 6.0)), 
-                Rectangle::new(color)
+                Rectangle::new(color, 0.0)
             ),
             ExpandableText::new(ctx, description, TextStyle::Primary, font_size.sm, Align::Center, None),
         )
