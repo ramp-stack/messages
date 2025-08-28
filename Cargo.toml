@@ -1,6 +1,6 @@
 [package]
 name = "ramp-messages"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 authors = ["Ella Mae <ellaammae@email.com>"]
 description = "A Rust crate built on RAMP that provides all the tools to configure AIR messages."
@@ -14,6 +14,6 @@ serde_json = "1.0.140"
 uuid = { version = "1.17.0", features = ["v4", "serde", "js"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 maverick_os = {path="../maverick_os"}
-pelican_ui = {path="../pelican_ui"}
-pelican_ui_std = {path="../pelican_ui_std"}
-profiles = {path="../profiles"}
+pelican_ui = "1.1.4"
+pelican_ui_std = "0.2.5"
+profiles = "0.1.3"
