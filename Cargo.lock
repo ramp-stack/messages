@@ -1884,44 +1884,6 @@ dependencies = [
 [[package]]
 name = "maverick_os"
 version = "0.1.10"
-dependencies = [
- "air",
- "android-activity",
- "async-trait",
- "block",
- "block2 0.6.1",
- "cli-clipboard",
- "dispatch2",
- "downcast-rs 2.0.1",
- "env_logger",
- "hex",
- "image 0.25.6",
- "imageproc",
- "jni",
- "libc",
- "log",
- "ndk-context",
- "objc2 0.6.1",
- "objc2-app-kit 0.3.1",
- "objc2-av-foundation",
- "objc2-core-graphics",
- "objc2-core-media",
- "objc2-core-video",
- "objc2-foundation 0.3.1",
- "objc2-ui-kit 0.3.1",
- "objc2-user-notifications 0.3.1",
- "rand 0.9.1",
- "raw-window-handle",
- "rusqlite",
- "serde",
- "serde_json",
- "tokio",
- "winit",
-]
-
-[[package]]
-name = "maverick_os"
-version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ebfc4ece540eee3cb5d07425d3d32acc2fbc5925d6c16078bc2f28ca0a4a735"
 dependencies = [
@@ -2879,7 +2841,7 @@ dependencies = [
  "downcast-rs 2.0.1",
  "image 0.25.6",
  "include_dir",
- "maverick_os 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "maverick_os",
  "nsvg",
  "pelican_ui_proc",
  "wgpu",
@@ -3080,9 +3042,9 @@ dependencies = [
 
 [[package]]
 name = "profiles"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2641551fbb3decda27c6d2590c7021a730e43a081f0bd2e4150c7344899036d2"
+checksum = "0f436ad0c0464331796eaeac669830b4eafafb360001e89954cc88c0c1c0e5b2"
 dependencies = [
  "image 0.25.6",
  "log",
@@ -3202,7 +3164,7 @@ name = "ramp-messages"
 version = "0.2.2"
 dependencies = [
  "chrono",
- "maverick_os 0.1.10",
+ "maverick_os",
  "pelican_ui",
  "pelican_ui_std",
  "profiles",
